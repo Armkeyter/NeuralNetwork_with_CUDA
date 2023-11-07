@@ -20,13 +20,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cuda_kernel.cuh">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
     <CudaCompile Include="File.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cuda_kernel.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
