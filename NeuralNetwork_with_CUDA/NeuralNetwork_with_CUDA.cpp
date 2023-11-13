@@ -1,17 +1,21 @@
 #include <iostream>
+#include <fstream>
 #include "./cuda_kernel.cuh"
+#include"./utils.h"
+
 
 int main()
 {
-    double A[3], B[3], C[3];
-
-    // Populate arrays A and B.
-    A[0] = 5; A[1] = 8; A[2] = 3;
-    B[0] = 7; B[1] = 6; B[2] = 4;
-
-    // Sum array elements across ( C[0] = A[0] + B[0] ) into array C using CUDA.
-    kernel(A, B, C, 3);
-
-    // Print out result.
-    std::cout << "C = " << C[0] << ", " << C[1] << ", " << C[2] << std::endl;
+    std::string filename = "data_banknote_authentication.txt";
+    int rows, cols;
+    int* rows_p =&rows;
+    int* cols_p = &cols;
+    float** d_array = read_csv_file(filename, rows_p, cols_p);
+    std::cout << "Rows: " << *rows_p << " Cols: " << *cols_p <<' ' <<rows << std::endl;
+    // Deleting 2D array
+    for (int i = 0; i < rows; ++i) {
+        delete[] d_array[i];
+    }
+    delete[] d_array;
+    return 0;
 }

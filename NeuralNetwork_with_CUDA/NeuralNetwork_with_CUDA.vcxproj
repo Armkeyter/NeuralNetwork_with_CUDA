@@ -130,9 +130,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="NeuralNetwork_with_CUDA.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cuda_kernel.cuh" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="File.cu" />

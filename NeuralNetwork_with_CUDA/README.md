@@ -8,7 +8,8 @@ Firstly, we will try to do classification task because we already know how to do
 
 ## Sequential part
 
-1. Find an input test data 			- (it can be just points like x=[0,0] and y={0,1}) 
+1. Find an input test data 		
+	- (it can be just points like x=[0,0] and y={0,1}) 
 2. Write how to read from file the dataset.
 3. Specify how we would like to create a neural network 
 	- (it can be just as an array of arrays but it is ugly or we can create a class of a model
@@ -45,8 +46,11 @@ The first that comes in mind is to paralellise:
 
 ### To add after
 
+We need to add some functions of preprocessing the data (text to categories).
+
 We need to implement support vector machine **SVM**.
 Instead of implementing AdaBoost which we mentioned we can implement __Voting ensemble method__
+
 
 We can think to add also **Convolution layers**.
 
