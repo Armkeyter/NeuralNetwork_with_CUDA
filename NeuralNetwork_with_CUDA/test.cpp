@@ -2,8 +2,33 @@
 #include <iostream>
 #include <random>
 
-std::map<std::string, float> init_model(const int d_input,const int d_hidden,const int d_output){
 
+//With every passing day my hatred for c++ grows
+//u should take a look at this https://www.youtube.com/watch?v=dQw4w9WgXcQ
+float dot_product(float &a, float &b, int length){
+    float res;
+    for(int i = 0; i < length; i++ ){
+        res+= a[i]*b[i];
+
+    }
+    return res;
+}
+
+float* mat_mul(float &a, float &b, const int rows_a, const int cols_b){
+    res = new float[rows_a][cols_b];
+    for(i = 0; i < rows_a ; i++){
+        for(j = 0; j < cols_b ; j++){
+
+            //TODO :()
+            //I don't have time but I think i'll build a get_columns function as in the tp and work with dot products to make the code more readable
+        }
+    }
+
+}
+
+
+std::map<std::string, float> init_model(const int d_input,const int d_hidden,const int d_output){
+    //Something's going weird with the const but todo està bien mi amigo
     std::map<std::string, float> m;
     std::default_random_engine generator;
     std::uniform_real_distribution<int> distribution(0,1);
