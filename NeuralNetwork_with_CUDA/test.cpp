@@ -63,6 +63,6 @@ std::map<std::string, float> init_model(const int d_input,const int d_hidden,con
 
     return m;
 
-
+//Idk how to make it more general so that we can arbitrarily set the numbers of layers etc if u have any idea how to implement this
 
 }
