@@ -2,20 +2,28 @@
 #include <fstream>
 #include "./cuda_kernel.cuh"
 #include"./utils.h"
-
+#include"./Neural_Network.h"
 
 int main()
 {
-    std::string filename = "data_banknote_authentication.txt";
-    int rows, cols;
-    int* rows_p =&rows;
-    int* cols_p = &cols;
-    float** d_array = read_csv_file(filename, rows_p, cols_p);
-    std::cout << "Rows: " << *rows_p << " Cols: " << *cols_p <<' ' <<rows << std::endl;
+    //std::string filename = "data_banknote_authentication.txt";
+    //int rows, cols;
+    //// Read data from the file
+    //float** d_array = read_csv_file(filename, &rows, &cols);
+    //std::cout << "Rows: " << rows << " Cols: " << cols<< std::endl;
+    
+    // Creating architecture
+    int architecture[] = {2,4,8,16,8,4,2};
+    // Length of array
+    int length = sizeof(architecture) / sizeof(architecture[0])-1;
+    std::cout << "Size of the array: " << length << std::endl;
+    Neural_Network NN(architecture,length);
+    NN.print_weights_biases();
+
     // Deleting 2D array
-    for (int i = 0; i < rows; ++i) {
-        delete[] d_array[i];
-    }
-    delete[] d_array;
+    //for (int i = 0; i < rows; ++i) {
+    //    delete[] d_array[i];
+    //}
+    //delete[] d_array;
     return 0;
 }
