@@ -13,7 +13,7 @@ int main()
     //std::cout << "Rows: " << rows << " Cols: " << cols<< std::endl;
     
     // Creating architecture
-    int architecture[] = {2,4,8,16,8,4,2};
+    int architecture[] = {2,4,8};
     // Length of array
     int length = sizeof(architecture) / sizeof(architecture[0])-1;
     std::cout << "Size of the array: " << length << std::endl;

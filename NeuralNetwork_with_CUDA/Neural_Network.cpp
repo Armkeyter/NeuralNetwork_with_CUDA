@@ -1,5 +1,32 @@
 #include "Neural_Network.h"
+#include <random>
 
+float Neural_Network::dot_product(float* X, float* W,int size)
+{
+	float res = 0.0f;
+	for (int i = 0; i < size; i++)
+		res += X[i] * W[i];
+
+	return res;
+}
+
+void Neural_Network::get_column(float** W, int row_size, int index,float result[])
+{
+	for (int i = 0; i < row_size; ++i)
+		result[i] = W[i][index];
+}
+
+void Neural_Network::matrix_multiplication(float** X, float** W, float** res, int row_size, int col_size, int W_col_size)
+{
+	float* column = new float[col_size];
+	for (int i = 0; i < row_size; i++) {
+		for (int j = 0; j < W_col_size; j++) {
+			get_column(W, col_size, j, column);
+			res[i][j] = dot_product(X[i],column,col_size);
+		}
+	}
+	delete[] column;
+}
 
 Neural_Network::Neural_Network(int* architecture,int size)
 {
@@ -46,13 +73,19 @@ Neural_Network::~Neural_Network()
 
 void Neural_Network::init_weights()
 {
+	// Set up a random number generator
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> dis(-0.5, 0.5);
+	// Generate a random number between -0.5 and 0.5
+	float randomValue = dis(gen);
 	//Each weight,bias entity
 	for (int i = 0; i < architecture_length; i++) {
 		//For each row
 		for (int j = 0; j < architecture[i]; j++) {
 			//For each column
 			for (int k = 0; k < architecture[i+1]; k++) {
-				array_weights[i][j][k] = k + j + i;
+				array_weights[i][j][k] = dis(gen);
 			}
 		}
 	}
@@ -60,7 +93,7 @@ void Neural_Network::init_weights()
 
 	for (int i = 0; i < architecture_length; i++)
 		for(int j=0;j<architecture[i+1];j++)
-			array_biases[i][j] = i + j;
+			array_biases[i][j] = dis(gen);
 }
 
 void Neural_Network::print_weights_biases()
@@ -86,4 +119,10 @@ void Neural_Network::print_weights_biases()
 	}
 
 
+}
+
+float** Neural_Network::forward_propagation(float** X, float** W, float* b)
+{
+	
+	return nullptr;
 }
