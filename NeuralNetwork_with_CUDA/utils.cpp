@@ -43,12 +43,16 @@ float** read_csv_file(std::string filename, int* rows, int* cols) {
     file.open(filename);
     int i = 0;
     while (!file.eof()) {
-        for (int j = 0; j < numCols; j++) {
+        for (int j = 0; j < numCols-1; j++) {
             getline(file, line, ',');
             float num_double = std::stof(line);
             data[i][j] = num_double;
             std::cout << data[i][j] << ' ';
         }
+        getline(file, line, '\n');
+        float num_double = std::stof(line);
+        data[i][numCols-1] = num_double;
+        std::cout << data[i][numCols - 1] << ' ';
         i++;
         std::cout << std::endl;
     }

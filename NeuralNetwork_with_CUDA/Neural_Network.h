@@ -69,14 +69,28 @@ public:
 	*/
 	void print_weights_biases();
 
+
 	/**
 	* Forward functoin from back_forward propagation.
 	* @param X - input data
 	* @param W - weights of the model
 	* @param b - biases of the model
-	* @return Array z.
+	* @param res - result of multiplication size of [W_row_size,col_size]
+	* @param row_size: size of row of X array
+	* @param col_size: size of col of X array
+	* @param W_col_size: size of col of a W array
+	* @return None.
 	*/
-	float** forward_propagation(float** X, float** W, float* b);
+	void forward_propagation(float** X, float** W, float* b, float** res, int row_size, int col_size, int W_col_size);
 
+	/**
+	* Forward functoin from back_forward propagation.
+	* @param X - input data
+	* @param Y - input data (labels)
+	* @param X_rows: size of row of X array
+	* @param X_cols: size of col of X array
+	* @return None.
+	*/
+	void fit(float** X, float* Y,int X_rows,int X_cols);
 };
 

@@ -129,11 +129,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="activations.cpp" />
     <ClCompile Include="NeuralNetwork_with_CUDA.cpp" />
     <ClCompile Include="Neural_Network.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="activations.h" />
     <ClInclude Include="cuda_kernel.cuh" />
     <ClInclude Include="Neural_Network.h" />
     <ClInclude Include="utils.h" />

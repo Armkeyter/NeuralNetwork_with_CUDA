@@ -24,6 +24,9 @@
     <ClCompile Include="Neural_Network.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="activations.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="File.cu">
@@ -38,6 +41,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Neural_Network.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="activations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
