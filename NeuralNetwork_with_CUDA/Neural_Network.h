@@ -77,6 +77,29 @@ public:
 	* @return Array z.
 	*/
 	float** forward_propagation(float** X, float** W, float* b);
+	
+	void backpropagation_i(float** X, float** W, float* b);
+	/**
+	*Backpropagation step
+	*@param X - input data
+	*@param W - Weights to be updated
+	*@param b - biases to be updated 
+	*/
+	void backpropagation(float** X, float*** W, float** b);
+	/**
+	*Full backpropagation update on the network
+	*@param X - input data
+	*@param W - list of all weights that will be updated 
+	*@param b - list of all biases that will be updated
+	*/
 
+	float compute_loss(float** Y_labels, float ** Y, int* size_Y, int* nb_classes);
+	/**
+	*Computes the cross entropy
+	* note : This loss assumes that we are working with outputs which are probabilities as zeros will make the computation fail
+	* note2 : we can switch to MSE if this is causing issues in the early tests
+	*@param Y_labels  labels
+	*@param Y - Y outputs from the network
+	*/
 };
 
