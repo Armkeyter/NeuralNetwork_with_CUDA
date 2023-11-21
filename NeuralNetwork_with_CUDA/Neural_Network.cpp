@@ -199,3 +199,23 @@ void Neural_Network::fit(float** X, float* Y,int X_rows,int X_cols)
 	}
 	delete[] Z;
 }
+
+void Neural_Network::backpropagation(float** X, float*** W, float** b){
+
+}
+
+void Neural_Network::backpropagation_i(float** X, float** W, float* b){
+
+}
+
+float Neural_Network::compute_loss(float** Y_labels, float ** Y, int* size_Y, int* nb_classes){
+// THIS ASSUMES OUR Y IS IN ONE HOT ENCODING 
+	float res = 0;
+
+	for (int i = 0; i < *size_Y; i++){
+		for (int j = 0; j < *nb_classes; j++){
+			res = res + Y_labels[i][j]*(Y[i][j]);
+		}
+	}
+	return res;
+}
