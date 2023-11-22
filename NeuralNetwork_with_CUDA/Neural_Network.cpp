@@ -303,8 +303,8 @@ void Neural_Network::backpropagation(float* learning_rate, float*** Z,int size_Y
 	}
 
 	//I need to keep track of the size of delta
-	float current_size_row;
-	float current_size_col;
+	int current_size_row;
+	int current_size_col;
 	current_size_row = size_Y;
 	current_size_col = nb_classes;
 
@@ -338,12 +338,24 @@ void Neural_Network::backpropagation(float* learning_rate, float*** Z,int size_Y
 
 
 		dW[l-i-1] = matrix_multiplication_return(matrix_transpose(X,X_rows,X_cols),delta_i,X_cols,X_rows,architecture[l-i-1]);
-		db[l-i-1] = delta_i;
-		//TODO : Sum here for db
+
+
+		//Sum along axis 0 on delta_i to get db
+		float* res = new float[current_size_col];
+		for(int j = 0; j<current_size_col;j++){
+			for(int i = 0; i< current_size_row;i++){
+		
+				res[j] = res[j] + delta_i[i][j];
+			}
+		}
+
+
+		db[l-i-1] = res;
 
 
 
-		//I redelete the delta copy since it is now obsolete (sorry again)
+
+		//I redelete the delta copy since it is now useless (sorry again)
 		for (int i = 0; i<X_rows;i++){
 			delete[] delta_previous[i];
 		}
