@@ -5,6 +5,8 @@ class Neural_Network
 private:
 	float*** array_weights;
 	float** array_biases;
+	float*** dW;
+	float** db;
 	int architecture_length;
 	int* architecture;
 
@@ -29,6 +31,11 @@ private:
 	*/
 	void get_column(float** W, int row_size, int index, float result[]);
 
+	void minus_matrix(float** X, float** Y, int row_size, int col_size);
+
+	void hadamard(float** X, float** Y, int row_size, int col_size);
+
+	float** matrix_transpose(float**X, const int row_size,const int col_size);
 	/**
 	* Matrix multiplication between matrix X and W
 	* @param X: Input matrix
@@ -93,19 +100,12 @@ public:
 	*/
 	void fit(float** X, float* Y,int X_rows,int X_cols);
 
-	void backpropagation_i(float** X, float** W, float* b);
-	/**
-	*Backpropagation step
-	*@param X - input data
-	*@param W - Weights to be updated
-	*@param b - biases to be updated 
-	*/
-	void backpropagation(float** X, float*** W, float** b);
+
+	void backpropagation(float* learning_rate, float*** Z,int size_Y, int nb_classes, float** X, int X_rows, int X_cols, float* Y_labels);
 	/**
 	*Full backpropagation update on the network
-	*@param X - input data
-	*@param W - list of all weights that will be updated 
-	*@param b - list of all biases that will be updated
+	*
+	*
 	*/
 
 	float compute_loss(float** Y_labels, float ** Y, int* size_Y, int* nb_classes);

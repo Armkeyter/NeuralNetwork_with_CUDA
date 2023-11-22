@@ -11,12 +11,41 @@ float Neural_Network::dot_product(float* X, float* W,int size)
 	return res;
 }
 
+
+
 void Neural_Network::get_column(float** W, int row_size, int index,float result[])
 {
 	for (int i = 0; i < row_size; ++i)
 		result[i] = W[i][index];
 }
 
+void Neural_Network::minus_matrix(float** X, float** Y, int row_size, int col_size){
+	for(int i = 0; i < row_size;i++){
+		for(int j = 0; j < col_size;j++){
+			X[i][j] = X[i][j] - Y[i][j];
+		}
+	}
+}
+
+void Neural_Network::hadamard(float** X, float** Y, int row_size, int col_size){
+	for(int i = 0; i < row_size;i++){
+		for(int j = 0; j < col_size;j++){
+			X[i][j] = X[i][j] * Y[i][j];
+		}
+	}
+}
+float** Neural_Network::matrix_transpose(float**X, int row_size, int col_size){
+	float** res = new float*[col_size];
+	for (int i = 0; i < col_size; i++){
+		res[i] = new float[row_size];
+	}
+	for (int i = 0; i < row_size; i++) {
+		for (int j = 0; j < col_size; j++) {
+			res[j][i] = X[i][j];
+		}
+	}
+	return res;
+}
 void Neural_Network::matrix_multiplication(float** X, float** W, float** res, int row_size, int col_size, int W_col_size)
 {
 	float* column = new float[col_size];
@@ -40,6 +69,8 @@ Neural_Network::Neural_Network(int* architecture,int size)
 	this->architecture = new int[architecture_length+1];
 	array_weights = new float** [architecture_length];
 	array_biases = new float* [architecture_length];
+	dW = new float** [architecture_length];
+	db = new float* [architecture_length];
 	//Creating second dimension of arrays weights and biases
 	for (int i = 0; i < architecture_length; i++) {
 		array_weights[i] = new float* [architecture[i]];
@@ -62,14 +93,19 @@ Neural_Network::~Neural_Network()
 
 		for (int j = 0; j < architecture[i];j++) {
  			delete array_weights[i][j];
+			delete dW[i][j];
 		}
 		delete[] array_weights[i];
+		delete[] dW[i];
 		delete[] array_biases[i];
+		delete[] db[i];
 	}
 	delete[] architecture;
 
 	delete[] array_weights;
+	delete[] dW;
 	delete[] array_biases;
+	delete[] db;
 }
 
 void Neural_Network::init_weights()
@@ -200,13 +236,29 @@ void Neural_Network::fit(float** X, float* Y,int X_rows,int X_cols)
 	delete[] Z;
 }
 
-void Neural_Network::backpropagation(float** X, float*** W, float** b){
+void Neural_Network::backpropagation(float* learning_rate, float*** Z,int size_Y, int nb_classes, float** X, int X_rows, int X_cols, float* Y_labels){
+	int l = architecture_length;
+	float** delta_i = new float*[size_Y];
+	for (int i = 0; i<size_Y;i++){
+		delta_i[i] = new float[nb_classes];
+	}
+	delta_i = minus_matrix(Y_labels,Z[architecture_length],size_Y,nb_classes);
+	for(int i =0; i< l; i++){
+
+		delta_i = hadamard(sigmoid(Z[l-i-1],X_rows,architecture[l-i-1], true),matrix_multiplication(delta_i,matrix_transpose(array_weights[l-i-1],X_rows,architecture[l-i-1])));
+		dW[l-i-1] = matrix_multiplication(matrix_transpose(X,X_rows,X_cols),delta_i,X_cols,architecture[l-i-1]);
+		db[l-i-1] = delta_i;
+		//TODO : Sum here
+		// dW and db in the edge case ie we derivate with regard to activation function
+
+		//update W and b w/ regard to dW and db in the class attributes
+
+
+	}
+	delete[] delta_i;
 
 }
 
-void Neural_Network::backpropagation_i(float** X, float** W, float* b){
-
-}
 
 float Neural_Network::compute_loss(float** Y_labels, float ** Y, int* size_Y, int* nb_classes){
 // THIS ASSUMES OUR Y IS IN ONE HOT ENCODING 
