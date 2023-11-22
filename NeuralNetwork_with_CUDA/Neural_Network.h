@@ -10,6 +10,12 @@ private:
 	int architecture_length;
 	int* architecture;
 
+
+
+
+	float** matrix_copy(float** X, int row_size, int col_size);
+
+
 	/**
 	* Dot product between two vectors
 	*
@@ -32,6 +38,8 @@ private:
 	void get_column(float** W, int row_size, int index, float result[]);
 
 	void minus_matrix(float** X, float** Y, int row_size, int col_size);
+
+	float** minus_matrix_return(float** X, float** Y, int row_size, int col_size);
 
 	void hadamard(float** X, float** Y, int row_size, int col_size);
 	float ** hadamard_return(float** X, float** Y, int row_size, int col_size);

@@ -2,6 +2,18 @@
 #include "./activations.h"
 #include <random>
 
+float **Neural_Network::matrix_copy(float** X, int row_size, int col_size){
+	float ** res = new float*[row_size];
+	for(int i = 0; i<row_size;i++){
+		res[i] = new float[col_size];
+		for(int j = 0; j<col_size; j++){
+			res[i][j] = X[i][j];
+
+		}
+	}
+	return res;
+}
+
 float Neural_Network::dot_product(float* X, float* W,int size)
 {
 	float res = 0.0f;
@@ -25,6 +37,15 @@ void Neural_Network::minus_matrix(float** X, float** Y, int row_size, int col_si
 			X[i][j] = X[i][j] - Y[i][j];
 		}
 	}
+}
+
+float** Neural_Network::minus_matrix_return(float** X, float** Y, int row_size, int col_size){
+	for(int i = 0; i < row_size;i++){
+		for(int j = 0; j < col_size;j++){
+			X[i][j] = X[i][j] - Y[i][j];
+		}
+	}
+	return X;
 }
 
 void Neural_Network::hadamard(float** X, float** Y, int row_size, int col_size){
@@ -269,25 +290,72 @@ void Neural_Network::fit(float** X, float* Y,int X_rows,int X_cols)
 }
 
 void Neural_Network::backpropagation(float* learning_rate, float*** Z,int size_Y, int nb_classes, float** X, int X_rows, int X_cols, float* Y_labels){
+
+
+	// I got tired of typing it.
 	int l = architecture_length;
+
+	//definition of delta_i, i'm pretty sure it is a very wrong way to do it and i'm thinking of making it an attribute of the class
 	float** delta_i = new float*[size_Y];
+
 	for (int i = 0; i<size_Y;i++){
 		delta_i[i] = new float[nb_classes];
 	}
-	delta_i = minus_matrix(Y_labels,Z[architecture_length],size_Y,nb_classes);
+
+	//I need to keep track of the size of delta
+	float current_size_row;
+	float current_size_col;
+	current_size_row = size_Y;
+	current_size_col = nb_classes;
+
+
+	//Initialisation, of the first delta
+	delta_i = minus_matrix_return(Z[l],Z[architecture_length],size_Y,nb_classes);
 	for(int i =0; i< l; i++){
 
+		//I make a copy of delta_i so that i can delete and recreate it , I am sorry this is very ugly
+		float** delta_previous = matrix_copy(delta_i,current_size_row,current_size_col);
+		
+		for (int i = 0; i<size_Y;i++){
+			delete[] delta_i[i];
+		}
+		delete[] delta_i;
+		
+
+		//I remake a delta_i with the right sizes to prepare for further computation
+		float** delta_i = new float*[X_rows];
+		for (int i = 0; i<size_Y;i++){
+			delta_i[i] = new float[architecture[l-i-1]];
+		}
+
+		//We compute the delta corresponding to the current step using the delta of the previous step
+
 		delta_i = hadamard_return(sigmoid_return(Z[l-i-1],X_rows,architecture[l-i-1], true),matrix_multiplication_return(delta_i,matrix_transpose(array_weights[l-i-1],X_rows,architecture[l-i-1]),X_rows,X_cols,architecture[l-i-1]),X_rows,architecture[l-i-1]);
+
+		//I update my delta sizes
+		current_size_row = X_rows;
+		current_size_col = architecture[l-i-1];
+
+
 		dW[l-i-1] = matrix_multiplication_return(matrix_transpose(X,X_rows,X_cols),delta_i,X_cols,X_rows,architecture[l-i-1]);
 		db[l-i-1] = delta_i;
-		//TODO : Sum here
-		// dW and db in the edge case ie we derivate with regard to activation function
+		//TODO : Sum here for db
 
-		//update W and b w/ regard to dW and db in the class attributes
+
+
+		//I redelete the delta copy since it is now obsolete (sorry again)
+		for (int i = 0; i<X_rows;i++){
+			delete[] delta_previous[i];
+		}
+		delete[] delta_previous;
+		
+		
+		//TODO : update W and b w/ regard to dW and db in the class attributes
 
 
 	}
 	delete[] delta_i;
+
 
 }
 
