@@ -34,6 +34,18 @@ void Neural_Network::hadamard(float** X, float** Y, int row_size, int col_size){
 		}
 	}
 }
+
+
+float** Neural_Network::hadamard_return(float** X, float** Y, int row_size, int col_size){
+	for(int i = 0; i < row_size;i++){
+		for(int j = 0; j < col_size;j++){
+			X[i][j] = X[i][j] * Y[i][j];
+		}
+	}
+	return X;
+}
+
+
 float** Neural_Network::matrix_transpose(float**X, int row_size, int col_size){
 	float** res = new float*[col_size];
 	for (int i = 0; i < col_size; i++){
@@ -265,7 +277,7 @@ void Neural_Network::backpropagation(float* learning_rate, float*** Z,int size_Y
 	delta_i = minus_matrix(Y_labels,Z[architecture_length],size_Y,nb_classes);
 	for(int i =0; i< l; i++){
 
-		delta_i = hadamard(sigmoid_return(Z[l-i-1],X_rows,architecture[l-i-1], true),matrix_multiplication_return(delta_i,matrix_transpose(array_weights[l-i-1],X_rows,X_cols,architecture[l-i-1])));
+		delta_i = hadamard_return(sigmoid_return(Z[l-i-1],X_rows,architecture[l-i-1], true),matrix_multiplication_return(delta_i,matrix_transpose(array_weights[l-i-1],X_rows,architecture[l-i-1]),X_rows,X_cols,architecture[l-i-1]),X_rows,architecture[l-i-1]);
 		dW[l-i-1] = matrix_multiplication_return(matrix_transpose(X,X_rows,X_cols),delta_i,X_cols,X_rows,architecture[l-i-1]);
 		db[l-i-1] = delta_i;
 		//TODO : Sum here

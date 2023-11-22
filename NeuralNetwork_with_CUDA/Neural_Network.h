@@ -34,6 +34,7 @@ private:
 	void minus_matrix(float** X, float** Y, int row_size, int col_size);
 
 	void hadamard(float** X, float** Y, int row_size, int col_size);
+	float ** hadamard_return(float** X, float** Y, int row_size, int col_size);
 
 	float** matrix_transpose(float**X, const int row_size,const int col_size);
 	/**
