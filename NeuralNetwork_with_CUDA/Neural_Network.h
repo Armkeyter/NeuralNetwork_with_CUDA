@@ -48,6 +48,8 @@ private:
 	*/
 	void matrix_multiplication(float** X,float** W, float** res, int row_size,int col_size,int W_col_size);
 
+	float** matrix_multiplication_return(float** X, float** W, int row_size, int col_size, int W_col_size);
+
 public:
 	/**
 	* Initialize neural network.

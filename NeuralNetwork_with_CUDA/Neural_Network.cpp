@@ -58,6 +58,25 @@ void Neural_Network::matrix_multiplication(float** X, float** W, float** res, in
 	delete[] column;
 }
 
+
+float** Neural_Network::matrix_multiplication_return(float** X, float** W, int row_size, int col_size, int W_col_size)
+{	float **res = new float*[row_size];
+	for (int i = 0; i<row_size; i++){
+		res[i] = new float[W_col_size];
+	}
+	float* column = new float[col_size];
+	for (int i = 0; i < row_size; i++) {
+		for (int j = 0; j < W_col_size; j++) {
+			get_column(W, col_size, j, column);
+			res[i][j] = dot_product(X[i],column,col_size);
+		}
+	}
+	delete[] column;
+	return res;
+}
+
+
+
 Neural_Network::Neural_Network(int* architecture,int size)
 {
 	//If array is empty
@@ -168,6 +187,7 @@ void Neural_Network::forward_propagation(float** X, float** W, float* b,float** 
 	}
 }
 
+
 void Neural_Network::fit(float** X, float* Y,int X_rows,int X_cols)
 {
 	// Check if the size of input data the same as the input layer of the NN
@@ -245,8 +265,8 @@ void Neural_Network::backpropagation(float* learning_rate, float*** Z,int size_Y
 	delta_i = minus_matrix(Y_labels,Z[architecture_length],size_Y,nb_classes);
 	for(int i =0; i< l; i++){
 
-		delta_i = hadamard(sigmoid(Z[l-i-1],X_rows,architecture[l-i-1], true),matrix_multiplication(delta_i,matrix_transpose(array_weights[l-i-1],X_rows,architecture[l-i-1])));
-		dW[l-i-1] = matrix_multiplication(matrix_transpose(X,X_rows,X_cols),delta_i,X_cols,architecture[l-i-1]);
+		delta_i = hadamard(sigmoid_return(Z[l-i-1],X_rows,architecture[l-i-1], true),matrix_multiplication_return(delta_i,matrix_transpose(array_weights[l-i-1],X_rows,X_cols,architecture[l-i-1])));
+		dW[l-i-1] = matrix_multiplication_return(matrix_transpose(X,X_rows,X_cols),delta_i,X_cols,X_rows,architecture[l-i-1]);
 		db[l-i-1] = delta_i;
 		//TODO : Sum here
 		// dW and db in the edge case ie we derivate with regard to activation function
