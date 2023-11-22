@@ -48,6 +48,13 @@ float** Neural_Network::minus_matrix_return(float** X, float** Y, int row_size, 
 	return X;
 }
 
+float* Neural_Network::minus_vector_return(float* X, float* Y, int row_size){
+	for(int i = 0; i < row_size;i++){
+		X[i] = X[i] - Y[i];
+	}
+	return X;
+}
+
 void Neural_Network::hadamard(float** X, float** Y, int row_size, int col_size){
 	for(int i = 0; i < row_size;i++){
 		for(int j = 0; j < col_size;j++){
@@ -66,6 +73,22 @@ float** Neural_Network::hadamard_return(float** X, float** Y, int row_size, int 
 	return X;
 }
 
+float** Neural_Network::scalar_multiply_return(float** X, float* y, int row_size, int col_size){
+	for(int i = 0; i < row_size;i++){
+		for(int j = 0; j < col_size;j++){
+			X[i][j] = *y*X[i][j];
+		}
+	}
+	return X;
+}
+
+float* Neural_Network::scalar_multiply_return(float* X, float* y, int row_size){
+	for(int i = 0; i < row_size;i++){
+
+			X[i] = *y*X[i];
+	}
+	return X;
+}
 
 float** Neural_Network::matrix_transpose(float**X, int row_size, int col_size){
 	float** res = new float*[col_size];
@@ -289,6 +312,9 @@ void Neural_Network::fit(float** X, float* Y,int X_rows,int X_cols)
 	delete[] Z;
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void Neural_Network::backpropagation(float* learning_rate, float*** Z,int size_Y, int nb_classes, float** X, int X_rows, int X_cols, float* Y_labels){
 
 
@@ -361,8 +387,9 @@ void Neural_Network::backpropagation(float* learning_rate, float*** Z,int size_Y
 		}
 		delete[] delta_previous;
 		
-		
-		//TODO : update W and b w/ regard to dW and db in the class attributes
+		array_weights[l-i-1] = minus_matrix_return(array_weights[l-i-1],scalar_multiply_return(dW[l-i-1],learning_rate,X_cols,architecture[l-i-1]),X_cols,architecture[l-i-1]);
+		array_biases[l-i-1] = minus_vector_return(array_biases[l-i-1], scalar_multiply_return(db[l-i-1],learning_rate,current_size_col),current_size_col);
+
 
 
 	}
@@ -370,7 +397,7 @@ void Neural_Network::backpropagation(float* learning_rate, float*** Z,int size_Y
 
 
 }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 float Neural_Network::compute_loss(float** Y_labels, float ** Y, int* size_Y, int* nb_classes){
 // THIS ASSUMES OUR Y IS IN ONE HOT ENCODING 
