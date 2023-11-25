@@ -5,8 +5,14 @@ class Neural_Network
 private:
 	float*** array_weights;
 	float** array_biases;
+	float*** dW;
+	float** db;
 	int architecture_length;
 	int* architecture;
+
+
+
+	float** matrix_copy(float** X, int row_size, int col_size);
 
 	/**
 	* Dot product between two vectors
@@ -29,6 +35,16 @@ private:
 	*/
 	void get_column(float** W, int row_size, int index, float result[]);
 
+	void minus_matrix(float** X, float** Y, int row_size, int col_size);
+	float** minus_matrix_return(float** X, float** Y, int row_size, int col_size);
+	float* minus_vector_return(float* X, float* Y, int row_size);
+
+	void hadamard(float** X, float** Y, int row_size, int col_size);
+	float** hadamard_return(float** X, float** Y, int row_size, int col_size);
+
+	float** scalar_multiply_return(float** X, float* y, int row_size, int col_size);
+	float* scalar_multiply_return(float* X, float* y, int row_size);
+	float** matrix_transpose(float** X, const int row_size, const int col_size);
 	/**
 	* Matrix multiplication between matrix X and W
 	* @param X: Input matrix
@@ -40,6 +56,9 @@ private:
 	* @return float* array column of matrix[index].
 	*/
 	void matrix_multiplication(float** X,float** W, float** res, int row_size,int col_size,int W_col_size);
+
+	float** matrix_multiplication_return(float** X, float** W, int row_size, int col_size, int W_col_size);
+
 
 public:
 	/**
@@ -93,7 +112,7 @@ public:
 	*/
 	void fit(float** X, int* Y,int X_rows,int X_cols);
 
-	void backpropagation(float** X, float*** W, float** b);
+	void backpropagation(float* learning_rate, float*** Z, int size_Y, int nb_classes, float** X, int X_rows, int X_cols, float* Y_labels);
 	/**
 	*Full backpropagation update on the network
 	*@param X - input data
