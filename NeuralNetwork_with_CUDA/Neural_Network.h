@@ -91,9 +91,9 @@ public:
 	* @param X_cols: size of col of X array
 	* @return None.
 	*/
-	void fit(float** X, float* Y,int X_rows,int X_cols);
+	void fit(float** X, int* Y,int X_rows,int X_cols);
 
-	void backpropagation_i(float** X, float** W, float* b);
+	void backpropagation(float** X, float*** W, float** b);
 	/**
 	*Full backpropagation update on the network
 	*@param X - input data
