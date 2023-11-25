@@ -22,14 +22,39 @@ void sigmoid(float** X, int rows, int cols, bool is_derivative)
 
 void tanh(float** X, int rows, int cols, bool is_derivative)
 {
+	if (!is_derivative)
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++)
+				X[i][j] = 2 / (1 + exp(-2 * X[i][j])) - 1;
+	else
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++)
+				X[i][j] = 1 - pow(X[i][j], 2);
 }
 
 void relu(float** X, int rows, int cols, bool is_derivative)
 {
+	if (!is_derivative)
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++)
+				X[i][j] = (X[i][j] >= 0) ? X[i][j] : 0;
+	else 
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++)
+				X[i][j] = (X[i][j] >= 0) ? 1 : 0;
+	
 }
 
-void leakyrelu(float** X, int rows, int cols, bool is_derivative)
+void leakyrelu(float** X,float alpha, int rows, int cols, bool is_derivative)
 {
+	if (!is_derivative)
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++)
+				X[i][j] = (X[i][j] >= 0) ? X[i][j] : alpha* X[i][j];
+	else
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++)
+				X[i][j] = (X[i][j] >= 0) ? 1 : alpha;
 }
 
 void softmax(float** X, int rows, int cols,float** res, bool is_derivative)

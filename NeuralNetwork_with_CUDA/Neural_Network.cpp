@@ -132,7 +132,7 @@ void Neural_Network::forward_propagation(float** X, float** W, float* b,float** 
 	}
 }
 
-void Neural_Network::fit(float** X, float* Y,int X_rows,int X_cols)
+void Neural_Network::fit(float** X, int* Y,int X_rows,int X_cols)
 {
 	// Check if the size of input data the same as the input layer of the NN
 	if (X_cols != architecture[0]) {
