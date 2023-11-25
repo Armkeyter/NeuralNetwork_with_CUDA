@@ -1,6 +1,23 @@
 #include "Activations.h"
 #include <math.h>
-
+float** sigmoid_return(float** X, int rows, int cols, bool is_derivative)
+{
+	if(!is_derivative){
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				X[i][j] = 1 / (1 + exp(-X[i][j]));
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				X[i][j] = X[i][j] * (1 - X[i][j]);
+			}
+		}
+	}
+	return X;
+}
 
 void sigmoid(float** X, int rows, int cols, bool is_derivative)
 {

@@ -91,26 +91,17 @@ public:
 	* @param X_cols: size of col of X array
 	* @return None.
 	*/
-	void fit(float** X, int* Y,int X_rows,int X_cols);
+	void fit(float** X, float* Y,int X_rows,int X_cols);
 
-
-
-	/**
-	*Backpropagation step
-	*@param X - input data
-	*@param W - Weights to be updated
-	*@param b - biases to be updated
-	*/
 	void backpropagation_i(float** X, float** W, float* b);
-	
 	/**
 	*Full backpropagation update on the network
 	*@param X - input data
-	*@param W - list of all weights that will be updated
+	*@param W - list of all weights that will be updated 
 	*@param b - list of all biases that will be updated
 	*/
-	void backpropagation(float** X, float*** W, float** b);
-	
+
+	float compute_loss(float** Y_labels, float ** Y, int* size_Y, int* nb_classes);
 	/**
 	*Computes the cross entropy
 	* note : This loss assumes that we are working with outputs which are probabilities as zeros will make the computation fail
@@ -118,7 +109,5 @@ public:
 	*@param Y_labels  labels
 	*@param Y - Y outputs from the network
 	*/
-	float compute_loss(float** Y_labels, float ** Y, int* size_Y, int* nb_classes);
-	
 };
 
