@@ -74,10 +74,11 @@ void leakyrelu(float** X,float alpha, int rows, int cols, bool is_derivative)
 				X[i][j] = (X[i][j] >= 0) ? 1 : alpha;
 }
 
-void softmax(float** X, int rows, int cols,float** res, bool is_derivative)
+void softmax(float** X, int rows, int cols, bool is_derivative)
 {
 	float sum = 0;
 	float exp_temp;
+	float* temp = new float[cols];
 	if (!is_derivative) {
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < cols; j++) {
@@ -87,10 +88,15 @@ void softmax(float** X, int rows, int cols,float** res, bool is_derivative)
 				for (int k = 0; k < cols; k++) {
 					sum += (float)exp(X[i][k]);
 				}
-				res[i][j] = exp_temp / sum;
+				temp[j] = exp_temp / sum;
+				
+			}
+			for (int j = 0; j < cols; j++) {
+				X[i][j] = temp[j];
 			}
 
 		}
+		delete[] temp;
 	}
 	else {
 

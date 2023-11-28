@@ -10,7 +10,7 @@ float** read_csv_file(std::string filename, int* rows, int* cols);
 *@param num_of_classes - function will return number of classes to this variable
 * @return 2D one_hot_encoded array.
 */
-float** one_hot_encoding(int* Y, int rows,int* num_of_classes);
+int** one_hot_encoding(int* Y, int rows,int* num_of_classes);
 
 /**
 *MinMaxScaler scales the array between given two givven features

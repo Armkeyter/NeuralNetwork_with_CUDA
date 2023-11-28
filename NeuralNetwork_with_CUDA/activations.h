@@ -50,5 +50,5 @@ void leakyrelu(float** X, float alpha, int rows, int cols, bool is_derivative = 
 * @param is_derivative: if to compute derivative or not (if it is true we assume that array X - is sigmoid output)
 * @return None.
 */
-void softmax(float** X, int rows, int cols,float** res, bool is_derivative = false);
+void softmax(float** X, int rows, int cols, bool is_derivative = false);
 

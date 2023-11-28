@@ -7,7 +7,7 @@ private:
 	float** array_biases;
 	float*** dW;
 	float** db;
-	int architecture_length;
+	int a_len;
 	int* architecture;
 
 
@@ -110,7 +110,7 @@ public:
 	* @param X_cols: size of col of X array
 	* @return None.
 	*/
-	void fit(float** X, int* Y,int X_rows,int X_cols);
+	void fit(float** X, int** Y,int X_rows,int X_cols);
 
 	void backpropagation(float* learning_rate, float*** Z, int size_Y, int nb_classes, float** X, int X_rows, int X_cols, float* Y_labels);
 	/**

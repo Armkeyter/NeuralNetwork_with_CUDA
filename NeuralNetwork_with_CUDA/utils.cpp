@@ -47,14 +47,11 @@ float** read_csv_file(std::string filename, int* rows, int* cols) {
             getline(file, line, ',');
             float num_double = std::stof(line);
             data[i][j] = num_double;
-            std::cout << data[i][j] << ' ';
         }
         getline(file, line, '\n');
         float num_double = std::stof(line);
         data[i][numCols-1] = num_double;
-        std::cout << data[i][numCols - 1] << ' ';
         i++;
-        std::cout << std::endl;
     }
 
     file.close();
@@ -63,7 +60,7 @@ float** read_csv_file(std::string filename, int* rows, int* cols) {
     return data;
 }
 
-float** one_hot_encoding(int* Y, int rows,int* classes_num)
+int** one_hot_encoding(int* Y, int rows,int* classes_num)
 {
     int min=0, max=0;
     // Counting min label and max to see the span of classes
@@ -78,9 +75,9 @@ float** one_hot_encoding(int* Y, int rows,int* classes_num)
         throw std::invalid_argument("Array Y contains just one class");
     }
     *classes_num = num_of_classes;
-    float** result = new float* [rows];
+    int** result = new int* [rows];
     for (int i = 0; i < rows; i++) {
-        result[i] = new float[num_of_classes];
+        result[i] = new int[num_of_classes];
 
         for (int j = 0; j < num_of_classes; j++)
             //if value of Y[i] equals to j than we write 1(as represents the class) otherwise 0

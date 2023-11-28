@@ -45,6 +45,7 @@ The first that comes in mind is to paralellise:
 	- dot product
 	- element-wise multiplication
 	- bias addition
+	- forward propagation
 	Updating weights function
 
 ### To add after
