@@ -26,7 +26,7 @@ It is done like this in keras)
 8. Create a function for learning(back-forward propagation)
 	- forward function :white_check_mark:
 	- computing loss :x:
-	- backward function :x:
+	- backward function :white_check_mark:
 	- update weights :x:
 9. Create loss functions :x:
 	- mse,mae, crossentropy

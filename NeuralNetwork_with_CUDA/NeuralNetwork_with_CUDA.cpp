@@ -4,6 +4,7 @@
 #include"./utils.h"
 #include"./Neural_Network.h"
 
+
 int main()
 {
     //std::string filename = "data_banknote_authentication.txt";
@@ -32,7 +33,7 @@ int main()
     std::cout << "Size of the array: " << length << std::endl;
     // Creating NN
     Neural_Network NN(architecture,length);
-    NN.print_weights_biases();
+    //NN.print_weights_biases();
     std::cout << std::endl << std::endl;
     std::cout << "DATA" << std::endl;
     for (int i = 0; i < rows; i++) {
@@ -44,11 +45,13 @@ int main()
     std::cout << std::endl << std::endl;
     int** one_hot_Y;
     int num_of_classes = 0;
+    float lr = 0.01f;
+    int epochs = 20;
     one_hot_Y = one_hot_encoding(Y, rows, &num_of_classes);
     try
     {
         
-        NN.fit(X, one_hot_Y, rows, cols - 1);
+        NN.fit(X, one_hot_Y, rows, cols - 1, epochs,lr);
 
 
         

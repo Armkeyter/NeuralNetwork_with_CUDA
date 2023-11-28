@@ -27,6 +27,9 @@
     <ClCompile Include="activations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="losses.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="File.cu">
@@ -44,6 +47,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="activations.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="losses.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

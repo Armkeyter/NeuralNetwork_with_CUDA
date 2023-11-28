@@ -59,7 +59,9 @@ private:
 
 	float** matrix_multiplication_return(float** X, float** W, int row_size, int col_size, int W_col_size);
 
+	void update_weights(float lr);
 
+	void back_propagation(float** X,int** Y,float*** Z,int rows,int cols);
 public:
 	/**
 	* Initialize neural network.
@@ -108,17 +110,10 @@ public:
 	* @param Y - input data (labels)
 	* @param X_rows: size of row of X array
 	* @param X_cols: size of col of X array
+	* @param lr: learnign rate of the algorithm
 	* @return None.
 	*/
-	void fit(float** X, int** Y,int X_rows,int X_cols);
-
-	void backpropagation(float* learning_rate, float*** Z, int size_Y, int nb_classes, float** X, int X_rows, int X_cols, float* Y_labels);
-	/**
-	*Full backpropagation update on the network
-	*@param X - input data
-	*@param W - list of all weights that will be updated 
-	*@param b - list of all biases that will be updated
-	*/
+	void fit(float** X, int** Y,int X_rows,int X_cols,int epochs=1, float lr=0.001);
 
 	float compute_loss(float** Y_labels, float ** Y, int* size_Y, int* nb_classes);
 	/**

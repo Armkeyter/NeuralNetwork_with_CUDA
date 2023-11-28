@@ -130,6 +130,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="activations.cpp" />
+    <ClCompile Include="losses.cpp" />
     <ClCompile Include="NeuralNetwork_with_CUDA.cpp" />
     <ClCompile Include="Neural_Network.cpp" />
     <ClCompile Include="utils.cpp" />
@@ -137,6 +138,7 @@
   <ItemGroup>
     <ClInclude Include="activations.h" />
     <ClInclude Include="cuda_kernel.cuh" />
+    <ClInclude Include="losses.h" />
     <ClInclude Include="Neural_Network.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
