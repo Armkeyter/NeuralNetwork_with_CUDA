@@ -1,5 +1,6 @@
 #include <iostream>
 #pragma once
+#include "./utils.h"
 class Neural_Network
 {
 private:
@@ -59,9 +60,37 @@ private:
 
 	float** matrix_multiplication_return(float** X, float** W, int row_size, int col_size, int W_col_size);
 
+	/**
+	* Updates array_weights, array_biases with dW and db.
+	* @param lr - learnign rate
+	* @return None.
+	*/
 	void update_weights(float lr);
 
+	/**
+	* Back propagatoin that countd dW and db of NeuralNetwork class
+	* @param X - input data
+	* @param Y - labels
+	* @param Z - activation functions
+	* @param row_size: size of row of X array
+	* @param col_size: size of col of X array
+	* @return None.
+	*/
 	void back_propagation(float** X,int** Y,float*** Z,int rows,int cols);
+
+	/**
+	* Forward functoin from back_forward propagation.
+	* @param X - input data
+	* @param W - weights of the model
+	* @param b - biases of the model
+	* @param res - result of multiplication size of [W_row_size,col_size]
+	* @param row_size: size of row of X array
+	* @param col_size: size of col of X array
+	* @param W_col_size: size of col of a W array
+	* @return None.
+	*/
+	void forward_propagation(float** X, float** W, float* b, float** res, int row_size, int col_size, int W_col_size);
+
 public:
 	/**
 	* Initialize neural network.
@@ -89,21 +118,7 @@ public:
 	* @return None.
 	*/
 	void print_weights_biases();
-
-
-	/**
-	* Forward functoin from back_forward propagation.
-	* @param X - input data
-	* @param W - weights of the model
-	* @param b - biases of the model
-	* @param res - result of multiplication size of [W_row_size,col_size]
-	* @param row_size: size of row of X array
-	* @param col_size: size of col of X array
-	* @param W_col_size: size of col of a W array
-	* @return None.
-	*/
-	void forward_propagation(float** X, float** W, float* b, float** res, int row_size, int col_size, int W_col_size);
-
+	
 	/**
 	* Forward functoin from back_forward propagation.
 	* @param X - input data
@@ -114,6 +129,26 @@ public:
 	* @return None.
 	*/
 	void fit(float** X, int** Y,int X_rows,int X_cols,int epochs=1, float lr=0.001);
+
+
+	/**
+	* Predict function that computes forward propagation on the data
+	* @param X - input data
+	* @param X_rows: size of row of X array
+	* @param X_cols: size of col of X array
+	* @return float.
+	*/
+	float** predict(float** X, int X_rows, int X_cols);
+	
+	/**
+	* Evaluate function that predict and returns the accuracy of the model
+	* @param X - input data
+	* @param Y_true - true labels of Y (in numeric encoding)
+	* @param X_rows: size of row of X array
+	* @param X_cols: size of col of X array
+	* @return float.
+	*/
+	float evaluate(float** X,int* Y_true, int X_rows,int X_cols);
 
 	float compute_loss(float** Y_labels, float ** Y, int* size_Y, int* nb_classes);
 	/**

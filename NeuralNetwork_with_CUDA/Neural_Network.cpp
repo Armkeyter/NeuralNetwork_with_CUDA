@@ -141,7 +141,7 @@ void Neural_Network::update_weights(float lr)
 		}
 	}
 	for (int i = 0; i < a_len; i++) {
-		for (int j = 0; j < architecture[i + 1]; i++) {
+		for (int j = 0; j < architecture[i + 1]; j++) {
 			array_biases[i][j] -= lr * db[a_len - 1 - i][j];
 		}
 	}
@@ -540,4 +540,68 @@ void Neural_Network::fit(float** X, int** Y,int X_rows,int X_cols,int epochs,flo
 	delete[] Z;
 	/////////////////////////////////////////////////////////////////
 
+}
+
+float** Neural_Network::predict(float** X, int X_rows, int X_cols)
+{
+	float*** Z = new float** [a_len];
+	// init first result XW weights
+	Z[0] = new float* [X_rows];
+	for (int j = 0; j < X_rows; j++)
+		Z[0][j] = new float[architecture[1]];
+
+	forward_propagation(X, array_weights[0], array_biases[0], Z[0], X_rows, X_cols, architecture[1]);
+	if (a_len >= 2) {
+		sigmoid(Z[0], X_rows, architecture[1]);
+
+		for (int i = 1; i < a_len; i++) {
+			Z[i] = new float* [X_rows];
+			for (int j = 0; j < X_rows; j++)
+				Z[i][j] = new float[architecture[i + 1]];
+			forward_propagation(Z[i - 1], array_weights[i], array_biases[i], Z[i], X_rows, architecture[i], architecture[i + 1]);
+			//if a hidden layer - do activation function
+			if (i != a_len - 1)
+				sigmoid(Z[i], X_rows, architecture[i + 1]);
+		}
+	}
+	softmax(Z[a_len - 1], X_rows, architecture[a_len]);
+
+
+	float** Y_pred = new float* [X_rows];
+	//nb_of_classes
+	for (int i = 0; i < X_rows; i++) {
+		Y_pred[i] = new float[architecture[a_len]];
+	}
+
+	for (int i = 0; i < X_rows; i++) 
+		for (int j = 0; j < architecture[a_len]; j++) 
+			Y_pred[i][j] = Z[a_len - 1][i][j];
+
+	// DELETING
+	for (int i = 0; i < a_len; i++) {
+
+		for (int j = 0; j < X_rows; j++) {
+			delete[] Z[i][j];
+		}
+		delete[] Z[i];
+	}
+	delete[] Z;
+
+	return Y_pred;
+}
+
+float Neural_Network::evaluate(float** X, int* Y_true, int X_rows, int X_cols)
+{
+	float acc = 0.0f;
+	float** Y_pred = predict(X, X_rows, X_cols);
+
+	int* Y_pred_num = to_numerical(Y_pred, X_rows, architecture[a_len]);
+
+	acc = accuracy(Y_pred_num, Y_true, X_rows);
+
+	for (int i = 0; i < X_rows; i++)
+		delete[] Y_pred[i];
+	delete[] Y_pred;
+	delete[] Y_pred_num;
+	return acc;
 }

@@ -86,6 +86,35 @@ int** one_hot_encoding(int* Y, int rows,int* classes_num)
     return result;
 }
 
+int* to_numerical(float** Y, int Y_rows, int Y_cols)
+{
+    int* Y_num = new int[Y_rows];
+    float max;
+    int max_i = 0;
+    for (int i = 0; i < Y_rows; i++) {
+        max = Y[i][0];
+        max_i = 0;
+        for (int j = 0; j < Y_cols; j++) {
+            if (max < Y[i][j]) {
+                max = Y[i][j];
+                max_i = j;
+            }
+        }
+        Y_num[i] = max_i;
+    }
+    return Y_num;
+}
+
+float accuracy(int* Y_true, int* Y_pred, int Y_rows)
+{
+    float accuracy = 0;
+    for (int i = 0; i < Y_rows; i++) {
+        if (Y_pred[i] == Y_true[i])
+            accuracy += 1;
+    }
+    return accuracy/Y_rows;
+}
+
 void MinMaxSacaler(float** X,int rows,int cols, int feature_range[2])
 {
     if (feature_range[0] > feature_range[1]) {

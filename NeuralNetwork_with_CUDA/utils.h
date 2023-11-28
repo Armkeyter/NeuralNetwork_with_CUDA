@@ -12,6 +12,10 @@ float** read_csv_file(std::string filename, int* rows, int* cols);
 */
 int** one_hot_encoding(int* Y, int rows,int* num_of_classes);
 
+int* to_numerical(float** Y, int Y_rows, int Y_cols);
+
+float accuracy(int* Y_true, int* Y_pred, int Y_rows);
+
 /**
 *MinMaxScaler scales the array between given two givven features
 *@param X - 2D input array
@@ -21,3 +25,4 @@ int** one_hot_encoding(int* Y, int rows,int* num_of_classes);
 * @return None.
 */
 void MinMaxSacaler(float** X, int rows, int cols, int feature_range[2]);
+
