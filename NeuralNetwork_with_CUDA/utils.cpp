@@ -2,6 +2,17 @@
 #include <fstream>
 #include "./utils.h"
 
+void write_into_file(std::string filename, float res){
+    std::ofstream file;
+    file.open(filename, std::ios::app);
+    if (!file.is_open()) {
+        std::cout << "Doesn't find a file" << std::endl;
+    } 
+    std::cout << "File has been opened" << std::endl;
+    file << res <<";"<< std::endl;
+    file.close();
+}
+
 float** read_csv_file(std::string filename, int* rows, int* cols) {
     std::ifstream file;
     file.open(filename);
