@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <time.h>
 #include "./cuda_kernel.cuh"
 #include"./utils.h"
 #include"./Neural_Network.h"
@@ -7,6 +8,7 @@
 
 int main()
 {
+    clock_t t;
     std::string filename = "data_banknote_authentication.txt";
     //std::string filename = "check_read.txt";
     int rows, cols;
@@ -31,6 +33,14 @@ int main()
     // Length of array
     int length = sizeof(architecture) / sizeof(architecture[0])-1;
     std::cout << "Size of the array: " << length << std::endl;
+
+
+    //Tracking time
+    auto time_spent = clock();
+
+    std::cout<<"\n time "<< time_spent<<std::endl;
+
+
     // Creating NN
 
     //int features[2] = { 0,1 };
@@ -81,6 +91,12 @@ int main()
         std::cout << "Accuracy of NN is: " << accuracy(Y, Y_pred_num, rows)<<std::endl;
         float eval = NN.evaluate(X, Y, rows, cols - 1);
         std::cout << "Accuracy of NN (Evaluate function) is: " << eval << std::endl;
+
+
+        time_spent = clock() - time_spent; 
+        float tl = float(time_spent)/float(CLOCKS_PER_SEC);
+        std::cout<<"\n time spent "<< tl<< " seconds "<< std::endl;
+        write_into_file("test_write_into_file.txt", tl);
 
         //Deleting dynamic memory
         for (int i = 0; i < rows; ++i) {
