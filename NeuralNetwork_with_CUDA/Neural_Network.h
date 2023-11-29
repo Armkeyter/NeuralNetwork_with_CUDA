@@ -99,7 +99,7 @@ public:
 	starting from Input till output layer.
 	* @return entity of the class.
 	*/
-	Neural_Network(int* architecture,int size);
+	Neural_Network(int* architecture,int size,int seed=NULL);
 
 	/**
 	Deleteing object.
@@ -109,9 +109,10 @@ public:
 
 	/**
 	* Initialize weights and biases of NN.
+	* @param seed = random seed, if seed is not given than each time it is random
 	* @return None.
 	*/
-	void init_weights();
+	void init_weights(unsigned int seed=NULL);
 
 	/**
 	* Debug print weights and biases.

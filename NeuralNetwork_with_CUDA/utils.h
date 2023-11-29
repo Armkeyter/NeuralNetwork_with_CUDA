@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
-
+#include <time.h>
+#include <stdlib.h>
 float** read_csv_file(std::string filename, int* rows, int* cols);
 
 /**
@@ -15,6 +16,8 @@ int** one_hot_encoding(int* Y, int rows,int* num_of_classes);
 int* to_numerical(float** Y, int Y_rows, int Y_cols);
 
 float accuracy(int* Y_true, int* Y_pred, int Y_rows);
+
+void shuffle(float** X, int* Y, int X_rows, unsigned int seed= NULL);
 
 /**
 *MinMaxScaler scales the array between given two givven features

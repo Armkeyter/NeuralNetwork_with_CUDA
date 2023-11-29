@@ -301,7 +301,7 @@ void Neural_Network::back_propagation(float** X, int** Y, float*** Z, int rows, 
 
 }
 
-Neural_Network::Neural_Network(int* architecture,int size)
+Neural_Network::Neural_Network(int* architecture,int size,int seed)
 {
 	//If array is empty
 	if (architecture[0] == 0 or size==0) {
@@ -333,7 +333,7 @@ Neural_Network::Neural_Network(int* architecture,int size)
 	for (int i = 0; i < a_len+1; ++i) {
 		this->architecture[i] = architecture[i];
 	}
-	init_weights();
+	init_weights(seed);
 }
 
 Neural_Network::~Neural_Network()
@@ -360,12 +360,16 @@ Neural_Network::~Neural_Network()
 	delete[] db;
 }
 
-void Neural_Network::init_weights()
+void Neural_Network::init_weights(unsigned int seed)
 {
 	// Set up a random number generator
 	//std::random_device rd;
 	//std::mt19937 gen(rd());
-	std::mt19937 gen(1);
+	//std::mt19937 gen;
+	std::random_device rd;
+	unsigned int actual_seed = (seed != 0) ? seed : rd();
+	std::mt19937 gen(actual_seed);
+	
 	std::uniform_real_distribution<float> dis(-0.5, 0.5);
 	// Generate a random number between -0.5 and 0.5
 	float randomValue = dis(gen);
