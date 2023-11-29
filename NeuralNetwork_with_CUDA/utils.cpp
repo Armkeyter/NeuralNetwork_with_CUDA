@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
+#include <cfloat>
 #include "./utils.h"
+
 
 void write_into_file(std::string filename, float res){
     std::ofstream file;
