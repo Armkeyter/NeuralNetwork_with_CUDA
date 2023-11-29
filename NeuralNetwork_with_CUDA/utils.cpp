@@ -128,6 +128,20 @@ float accuracy(int* Y_true, int* Y_pred, int Y_rows)
     return accuracy/Y_rows;
 }
 
+void shuffle(float** X, int* Y, int X_rows,unsigned int seed)
+{
+    if (seed == 0)
+        srand(time(NULL));
+    else
+        srand(seed);
+    int j = 0;
+    for (int i = 0; i < X_rows; i++) {
+        j = rand() % X_rows;
+        std::swap(X[i], X[j]);
+        std::swap(Y[i], Y[j]);
+    }
+}
+
 void MinMaxSacaler(float** X,int rows,int cols, int feature_range[2])
 {
     if (feature_range[0] > feature_range[1]) {
