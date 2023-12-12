@@ -2,6 +2,9 @@
 #include "./activations.h"
 #include "./losses.h"
 #include <random>
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#include "./cuda_kernel.cuh"
 
 //#define DEBUG 
 
@@ -437,101 +440,175 @@ void Neural_Network::fit(float** X, int** Y,int X_rows,int X_cols,int epochs,flo
 	for (int j = 0; j < X_rows; j++)
 		Z[0][j] = new float[architecture[1]];
 
-	forward_propagation(X, array_weights[0], array_biases[0], Z[0], X_rows, X_cols, architecture[1]);
-	if (a_len >= 2) {
-		sigmoid(Z[0], X_rows, architecture[1]);
+	#ifdef GPU
+
+		matrix_multiplication(X, array_weights[0], Z[0], X_rows, X_cols, architecture[1]);
+		for (int i = 0; i < X_rows; i++) {
+			for (int j = 0; j < architecture[1]; j++) {
+				Z[0][i][j] += array_biases[0][j];
+			}
+		}
+
+		std::cout << "XW+b: " << std::endl;
+		for (int j = 0; j < X_rows; j++) {
+			for (int k = 0; k < architecture[1]; k++) {
+				std::cout << Z[0][j][k] << ' ';
+			}
+			std::cout << std::endl;
+		}
+		std::cout << std::endl;
+		std::cout << std::endl;
+
+		// FORWARD FUNCTION
+		float* flattenedX = new float[X_rows * X_cols];
+		float* flattenWeights = new float[architecture[0] * architecture[1]];
+		float* result = new float[X_rows * architecture[1]];
+
+		for (int i = 0; i < X_rows; ++i)
+			for (int j = 0; j < X_cols; ++j)
+				flattenedX[i * X_cols + j] = X[i][j];
+
+		for (int i = 0; i < architecture[0]; i++)
+			for (int j = 0; j < architecture[1]; j++)
+				flattenWeights[i * architecture[1] + j] = array_weights[0][i][j];
+
+		float* result_GPU, * x_GPU, * weights_GPU, * biases_GPU;
 		
-		for (int i = 1; i < a_len; i++) {
-			Z[i] = new float* [X_rows];
-			for (int j = 0; j < X_rows; j++)
-				Z[i][j] = new float[architecture[i+1]];
-			forward_propagation(Z[i-1], array_weights[i], array_biases[i], Z[i], X_rows, architecture[i], architecture[i+1]);
-			//if a hidden layer - do activation function
-			if(i!=a_len-1)
-				sigmoid(Z[i], X_rows, architecture[i+1]);
-		}
-	}
+		cudaMalloc((void**)&x_GPU, X_rows * X_cols * sizeof(float));
+		cudaMalloc((void**)&weights_GPU, architecture[0] * architecture[1] * sizeof(float));
+		cudaMalloc((void**)&biases_GPU, architecture[1] * sizeof(float));
+		cudaMalloc((void**)&result_GPU, X_rows* architecture[1] * sizeof(float));
 
-	softmax(Z[a_len-1], X_rows, architecture[a_len]);
+		cudaMemcpy(x_GPU, flattenedX, X_rows * X_cols * sizeof(float), cudaMemcpyHostToDevice);
+		cudaMemcpy(weights_GPU, flattenWeights, architecture[0] * architecture[1] * sizeof(float), cudaMemcpyHostToDevice);
+		cudaMemcpy(biases_GPU, array_biases[0], architecture[1] * sizeof(float), cudaMemcpyHostToDevice);
 
-	// Compute loss
+		int blockSize = 8;
+		forwardPropagation(blockSize, x_GPU, weights_GPU,biases_GPU, result_GPU, X_rows, X_cols, architecture[1]);
 
-	float cross_loss = cross_entropy_loss(Y, Z[a_len - 1], X_rows, architecture[a_len]);
-	std::cout << "EPOCH: " << 1 << '\t' << "Loss: " << cross_loss << std::endl;
+		cudaMemcpy(result, result_GPU, X_rows * architecture[1] * sizeof(float), cudaMemcpyDeviceToHost);
 
-	#ifdef DEBUG
-		for (int i = 0; i < a_len; i++) {
-			std::cout << "Weights: " << i << std::endl;
-			for (int j = 0; j < X_rows; j++) {
-				for (int k = 0; k < architecture[i + 1]; k++) {
-					std::cout << Z[i][j][k] << ' ';
-				}
-				std::cout << std::endl;
+		std::cout << "After adding biases" << std::endl;
+		for (int i = 0; i < X_rows; i++)
+		{
+			for (int j = 0; j < architecture[1]; j++)
+			{
+				std::cout << result[i * architecture[1] + j] << " ";
 			}
 			std::cout << std::endl;
-			std::cout << std::endl;
 		}
-	#endif // DEBUG
+
+
+		// DELETING
+		cudaFree(x_GPU);
+		cudaFree(weights_GPU);
+		cudaFree(result_GPU);
+		cudaFree(biases_GPU);
+
+		delete[] result;
+		delete[] flattenedX;
+		delete[] flattenWeights;
+
+		delete[] Z[0];
+		delete[] Z;
 	
-	// Back propagation
-	back_propagation(X, Y, Z, X_rows, X_cols);
-
-	/////////////////////////////////////////////////////////////////
-	//UPDATE WEIGHTS
-	update_weights(lr);
-	#ifdef DEBUG
-
-		for (int i = 0; i < a_len; i++) {
-			std::cout << " Weights: " << i << std::endl;
-			for (int j = 0; j < architecture[i]; j++) {
-				for (int k = 0; k < architecture[i + 1]; k++) {
-					std::cout << array_weights[i][j][k] << ' ';
-				}
-				std::cout << std::endl;
-			}
-			std::cout << std::endl;
-			std::cout << std::endl;
-		}
-		for (int j = 0; j < a_len; j++) {
-			std::cout << " Biases: " << j << std::endl;
-			for (int k = 0; k < architecture[j + 1]; k++) {
-				std::cout << array_biases[j][k] << ' ';
-			}
-			std::cout << std::endl;
-		}
-		std::cout << std::endl;
-		std::cout << std::endl;
-	#endif // DEBUG
-
-	if (epochs == 1 || epochs < 1)
-		return;
-
-	//First epoch was before
-	for (int i = 0; i < epochs-1; i++) {
-		//FORWARD PROPAGATION
-		std::cout << "EPOCH: " << i+2 << '\t';
+	#else
 		forward_propagation(X, array_weights[0], array_biases[0], Z[0], X_rows, X_cols, architecture[1]);
 		if (a_len >= 2) {
 			sigmoid(Z[0], X_rows, architecture[1]);
+		
 			for (int i = 1; i < a_len; i++) {
-				forward_propagation(Z[i - 1], array_weights[i], array_biases[i], Z[i], X_rows, architecture[i], architecture[i + 1]);
+				Z[i] = new float* [X_rows];
+				for (int j = 0; j < X_rows; j++)
+					Z[i][j] = new float[architecture[i+1]];
+				forward_propagation(Z[i-1], array_weights[i], array_biases[i], Z[i], X_rows, architecture[i], architecture[i+1]);
 				//if a hidden layer - do activation function
-				if (i != a_len - 1)
-					sigmoid(Z[i], X_rows, architecture[i + 1]);
+				if(i!=a_len-1)
+					sigmoid(Z[i], X_rows, architecture[i+1]);
 			}
 		}
-		softmax(Z[a_len - 1], X_rows, architecture[a_len]);
-		// COMPUTE LOSS
+
+		softmax(Z[a_len-1], X_rows, architecture[a_len]);
+
+		// Compute loss
+
 		float cross_loss = cross_entropy_loss(Y, Z[a_len - 1], X_rows, architecture[a_len]);
-		std::cout << "Loss: " << cross_loss << std::endl;
-		//
-		// 
-		//BACK PROPAGATION
+		std::cout << "EPOCH: " << 1 << '\t' << "Loss: " << cross_loss << std::endl;
+
+		#ifdef DEBUG
+			for (int i = 0; i < a_len; i++) {
+				std::cout << "Weights: " << i << std::endl;
+				for (int j = 0; j < X_rows; j++) {
+					for (int k = 0; k < architecture[i + 1]; k++) {
+						std::cout << Z[i][j][k] << ' ';
+					}
+					std::cout << std::endl;
+				}
+				std::cout << std::endl;
+				std::cout << std::endl;
+			}
+		#endif // DEBUG
+	
+		// Back propagation
 		back_propagation(X, Y, Z, X_rows, X_cols);
 
+		/////////////////////////////////////////////////////////////////
 		//UPDATE WEIGHTS
 		update_weights(lr);
-	}
+		#ifdef DEBUG
+
+			for (int i = 0; i < a_len; i++) {
+				std::cout << " Weights: " << i << std::endl;
+				for (int j = 0; j < architecture[i]; j++) {
+					for (int k = 0; k < architecture[i + 1]; k++) {
+						std::cout << array_weights[i][j][k] << ' ';
+					}
+					std::cout << std::endl;
+				}
+				std::cout << std::endl;
+				std::cout << std::endl;
+			}
+			for (int j = 0; j < a_len; j++) {
+				std::cout << " Biases: " << j << std::endl;
+				for (int k = 0; k < architecture[j + 1]; k++) {
+					std::cout << array_biases[j][k] << ' ';
+				}
+				std::cout << std::endl;
+			}
+			std::cout << std::endl;
+			std::cout << std::endl;
+		#endif // DEBUG
+
+		if (epochs == 1 || epochs < 1)
+			return;
+
+		//First epoch was before
+		for (int i = 0; i < epochs-1; i++) {
+			//FORWARD PROPAGATION
+			std::cout << "EPOCH: " << i+2 << '\t';
+			forward_propagation(X, array_weights[0], array_biases[0], Z[0], X_rows, X_cols, architecture[1]);
+			if (a_len >= 2) {
+				sigmoid(Z[0], X_rows, architecture[1]);
+				for (int i = 1; i < a_len; i++) {
+					forward_propagation(Z[i - 1], array_weights[i], array_biases[i], Z[i], X_rows, architecture[i], architecture[i + 1]);
+					//if a hidden layer - do activation function
+					if (i != a_len - 1)
+						sigmoid(Z[i], X_rows, architecture[i + 1]);
+				}
+			}
+			softmax(Z[a_len - 1], X_rows, architecture[a_len]);
+			// COMPUTE LOSS
+			float cross_loss = cross_entropy_loss(Y, Z[a_len - 1], X_rows, architecture[a_len]);
+			std::cout << "Loss: " << cross_loss << std::endl;
+			//
+			// 
+			//BACK PROPAGATION
+			back_propagation(X, Y, Z, X_rows, X_cols);
+
+			//UPDATE WEIGHTS
+			update_weights(lr);
+		}
+
 	/////////////////////////////////////////////////////////////////
 	// DELETING
 	for (int i = 0; i < a_len; i++) {
@@ -543,6 +620,8 @@ void Neural_Network::fit(float** X, int** Y,int X_rows,int X_cols,int epochs,flo
 	}
 	delete[] Z;
 	/////////////////////////////////////////////////////////////////
+	#endif 
+
 
 }
 
@@ -608,4 +687,74 @@ float Neural_Network::evaluate(float** X, int* Y_true, int X_rows, int X_cols)
 	delete[] Y_pred;
 	delete[] Y_pred_num;
 	return acc;
+}
+
+void Neural_Network::test(int rows,int cols)
+{
+	float* A = new float[rows * cols];
+	float* B = new float[architecture[0] * architecture[1]];
+
+	// ... (populate matrices A and B)
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < cols; j++) {
+			A[i * cols + j] = i * cols + j;
+			std::cout << A[i * cols + j] << ' ';
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+	std::cout << std::endl;
+	for (int i = 0; i < architecture[0]; i++) {
+		for (int j = 0; j < architecture[1]; j++) {
+			B[i * architecture[1] + j] = i * architecture[1] + j;
+			std::cout << B[i * architecture[1] + j] << ' ';
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+	std::cout << std::endl;
+
+	// Allocate memory for matrices A and B on the device
+	float* d_A, * d_B, * d_C;
+	cudaMalloc((void**)&d_A, rows * cols * sizeof(float));
+	cudaMalloc((void**)&d_B, architecture[0] * architecture[1] * sizeof(float));
+	cudaMalloc((void**)&d_C, rows * architecture[1] * sizeof(float));
+
+	// Copy matrices from host to device
+	cudaMemcpy(d_A, A, rows * cols * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_B, B, architecture[0] * architecture[1] * sizeof(float), cudaMemcpyHostToDevice);
+
+	// Define grid and block dimensions
+	dim3 DimGrid((architecture[1] - 1) / 8 + 1, (rows- 1) / 8 + 1, 1);
+	dim3 DimBlock(8, 8, 1);
+
+	int blockSize = 8;
+
+	// Launch the kernel
+	//Wrapper::matmul_wrap(numBlocks, blockSize, d_A, d_B, d_C, rows, cols, architecture[1]);
+	matrixMultiplication(blockSize, d_A, d_B, d_C, rows, cols, architecture[1]);
+	// Copy the result matrix back to the host
+	float* C = new float[rows * architecture[1]];
+	cudaMemcpy(C, d_C, rows * architecture[1] * sizeof(float), cudaMemcpyDeviceToHost);
+
+
+	std::cout << "Result Matrix C:" << std::endl;
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < architecture[1]; j++) {
+			std::cout << C[i * architecture[1] + j] << ' ';
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+	std::cout << std::endl;
+	
+	// Print the result matrix C
+
+	// Free host and device memory
+	delete[] A;
+	delete[] B;
+	delete[] C;
+	cudaFree(d_A);
+	cudaFree(d_B);
+	cudaFree(d_C);
 }

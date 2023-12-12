@@ -1,6 +1,9 @@
 #include <iostream>
 #pragma once
 #include "./utils.h"
+
+#define GPU
+
 class Neural_Network
 {
 private:
@@ -159,5 +162,6 @@ public:
 	*@param Y_labels  labels
 	*@param Y - Y outputs from the network
 	*/
+	void test(int rows, int cols);
 };
 

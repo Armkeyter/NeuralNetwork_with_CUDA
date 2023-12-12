@@ -29,14 +29,14 @@ It is done like this in keras)
 	- computing loss :white_check_mark:
 	- backward function :white_check_mark:
 	- update weights :white_check_mark:
-9. Create loss functions :x:
+9. Create loss functions :white_check_mark:
 	- mse,mae, crossentropy
 10. Create a function for fit and predict. :white_check_mark:
 	- fit
 	- predict
 	- evaluate
-11. Make a wrapper of time to measure the time it takes to train the model :x:
-12. (Optional) Write results of time measure and other info in file for further plots
+11. Make a wrapper of time to measure the time it takes to train the model :white_check_mark:
+12. (Optional) Write results of time measure and other info in file for further plots :white_check_mark:
 
 ___Only after everything works sequentially we can do in parallel.___
 
@@ -51,6 +51,10 @@ The first that comes in mind is to paralellise:
 	- bias addition
 	- forward propagation
 	Updating weights function
+
+1. Make a function to get information from the GPU card. (num of blocks, size etc)
+2. 
+3. 
 
 ### To add after
 

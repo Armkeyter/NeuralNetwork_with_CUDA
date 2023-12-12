@@ -30,6 +30,9 @@
     <ClCompile Include="losses.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cuda_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="File.cu">
