@@ -448,7 +448,7 @@ void Neural_Network::fit(float** X, int** Y,int X_rows,int X_cols,int epochs,flo
 				Z[0][i][j] += array_biases[0][j];
 			}
 		}
-
+		sigmoid(Z[0], X_rows, architecture[1]);
 		std::cout << "XW+b: " << std::endl;
 		for (int j = 0; j < X_rows; j++) {
 			for (int k = 0; k < architecture[1]; k++) {
@@ -486,29 +486,30 @@ void Neural_Network::fit(float** X, int** Y,int X_rows,int X_cols,int epochs,flo
 		int blockSize = 8;
 		forwardPropagation(blockSize, x_GPU, weights_GPU,biases_GPU, result_GPU, X_rows, X_cols, architecture[1]);
 
-		cudaMemcpy(result, result_GPU, X_rows * architecture[1] * sizeof(float), cudaMemcpyDeviceToHost);
+		sigmoid(blockSize, result_GPU, result_GPU, X_rows, architecture[1]);
+		
+		float* sigmoid_return = new float[X_rows * architecture[1]];
+		cudaMemcpy(sigmoid_return, result_GPU, X_rows * architecture[1] * sizeof(float), cudaMemcpyDeviceToHost);
 
-		std::cout << "After adding biases" << std::endl;
+		std::cout << "After Sigmoid" << std::endl;
 		for (int i = 0; i < X_rows; i++)
 		{
 			for (int j = 0; j < architecture[1]; j++)
 			{
-				std::cout << result[i * architecture[1] + j] << " ";
+				std::cout << sigmoid_return[i * architecture[1] + j] << " ";
 			}
 			std::cout << std::endl;
 		}
-
 
 		// DELETING
 		cudaFree(x_GPU);
 		cudaFree(weights_GPU);
 		cudaFree(result_GPU);
 		cudaFree(biases_GPU);
-
 		delete[] result;
 		delete[] flattenedX;
 		delete[] flattenWeights;
-
+		delete[] sigmoid_return;
 		delete[] Z[0];
 		delete[] Z;
 	
