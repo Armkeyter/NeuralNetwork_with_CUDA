@@ -660,7 +660,7 @@ void Neural_Network::fit(float** X, int** Y,int X_rows,int X_cols,int epochs,flo
 			return;
 
 		//First epoch has already been
-		for (int i = 1; i < epochs; i++) {
+		for (int i = 1; i < epochs-1; i++) {
 			std::cout << "EPOCH: " << i + 2 << '\t';
 			//Forward
 			forwardPropagation(blockSize, x_GPU, weights_GPU[0], biases_GPU[0], Z_GPU[0], X_rows, X_cols, architecture[1]);

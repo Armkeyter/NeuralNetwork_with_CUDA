@@ -60,7 +60,6 @@ __device__ void dev_sigmoid(float* A, float* B, bool is_derivative, int rows, in
             B[Row * cols + Col] = A[Row * cols + Col] * (1 - A[Row * cols + Col]);
     }
 }
-}
 
 // Very mysterious, I removed the shared memory part because it's late and I'll do it later, but it works ahah
 __global__ void matrixSum(float* matrix, float* result, int rows, int cols) {
@@ -100,7 +99,7 @@ __global__ void matrixSum(float* matrix, float* result, int rows, int cols) {
     if (threadIdx.x == 0 && threadIdx.y == 0) {
         atomicAdd(result, localSum);
     }
-
+}
 __global__ void hadamardprod(float* data1, float* data2, int rows, int cols) {
     int Row = blockIdx.y * blockDim.y + threadIdx.y;
     int Col = blockIdx.x * blockDim.x + threadIdx.x;
@@ -245,7 +244,17 @@ void hadamardproduct(int threadsN, float* data1, float* data2,
     }
     hadamardprod << <blocksPerGrid, threadsPerBlock >> > (data1, data2, rows, cols);
 }
+__global__ void sigmoidCU(float* A, float* B, bool is_derivative, int rows, int cols) {
+    int Row = blockIdx.y * blockDim.y + threadIdx.y;
+    int Col = blockIdx.x * blockDim.x + threadIdx.x;
+    if ((Row < rows) && (Col < cols)) {
+        if (!is_derivative)
+            B[Row * cols + Col] = 1 / (1 + exp(-A[Row * cols + Col]));
+        else
+            B[Row * cols + Col] = A[Row * cols + Col] * (1 - A[Row * cols + Col]);
+    }
 
+}
 void sigmoid(int threadsN, float* data_GPU, float* reuslts_GPU, int rows, int cols, bool is_derivative)
 {
     dim3 threadsPerBlock(threadsN, threadsN);
