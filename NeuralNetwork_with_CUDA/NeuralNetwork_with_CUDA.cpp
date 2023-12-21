@@ -30,7 +30,7 @@ int main()
     }
 
     // Creating architecture
-    int architecture[] = {4,16,2};
+    int architecture[] = {4,16,8,2};
     //int architecture[] = { 4,16,32,4,8,16,4,4,16,4,2 };
     // Length of array
     int length = sizeof(architecture) / sizeof(architecture[0])-1;
@@ -54,9 +54,9 @@ int main()
         //int features[2] = { 0,1 };
         //MinMaxSacaler(X, rows, cols - 1, features);
         unsigned int seed = 10;
-        shuffle(X, Y, rows);
-        Neural_Network NN(architecture, length);
-        //NN.print_weights_biases();
+        shuffle(X, Y, rows, seed);
+        Neural_Network NN(architecture, length, seed);
+        NN.print_weights_biases();
         std::cout << std::endl << std::endl;
         std::cout << "DATA" << std::endl;
         for (int i = 0; i < rows; i++) {
@@ -70,13 +70,12 @@ int main()
         int** one_hot_Y;
         int num_of_classes = 0;
         float lr = 0.01;
-        int epochs = 1;
+        int epochs = 100;
         one_hot_Y = one_hot_encoding(Y, rows, &num_of_classes);
         float** Y_pred;
         int* Y_pred_num;
 
         NN.fit(X, one_hot_Y, rows, cols - 1, epochs, lr);
-        //NN.test(rows, cols - 1);
 
         for (int i = 0; i < rows;i++) {
             delete[] d_array[i];
@@ -97,8 +96,8 @@ int main()
         //int features[2] = { 0,1 };
         //MinMaxSacaler(X, rows, cols - 1, features);
         unsigned int seed = 10;
-        shuffle(X, Y, rows);
-        Neural_Network NN(architecture,length);
+        shuffle(X, Y, rows, seed);
+        Neural_Network NN(architecture,length, seed);
         //NN.print_weights_biases();
         std::cout << std::endl << std::endl;
         std::cout << "DATA" << std::endl;
@@ -113,7 +112,7 @@ int main()
         int** one_hot_Y;
         int num_of_classes = 0;
         float lr = 0.01;
-        int epochs = 1;
+        int epochs = 100;
         one_hot_Y = one_hot_encoding(Y, rows, &num_of_classes);
         float** Y_pred;
         int* Y_pred_num;

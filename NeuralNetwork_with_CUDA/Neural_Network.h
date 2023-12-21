@@ -2,7 +2,7 @@
 #pragma once
 #include "./utils.h"
 
-#define GPU
+//#define GPU
 
 class Neural_Network
 {
@@ -80,6 +80,20 @@ private:
 	* @return None.
 	*/
 	void back_propagation(float** X,int** Y,float*** Z,int rows,int cols);
+	/**
+	* Back propagatoin in GPU that count dW and db of NeuralNetwork class
+	* @param X - input data
+	* @param Y - labels
+	* @param Z - activation functions
+	* @param row_size: size of row of X array
+	* @param col_size: size of col of X array
+	* @return None.
+	*/
+	//void back_propagation_GPU(int blockSize, float* x_GPU, float** Z_GPU, float** weights_GPU,
+	//	float** biases_GPU, float lr, float* Y, int X_rows, int X_cols);
+
+	void back_propagation_GPU(int blockSize, float* x_GPU, float* Y_GPU, float** Z_GPU,
+		float** weights_GPU, float** dW_GPU, float** biases_GPU, float** db_GPU, float** new_weights, float lr, int X_rows, int X_cols);
 
 	/**
 	* Forward functoin from back_forward propagation.

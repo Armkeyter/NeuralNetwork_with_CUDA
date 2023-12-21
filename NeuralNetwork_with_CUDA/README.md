@@ -45,11 +45,13 @@ ___Only after everything works sequentially we can do in parallel.___
 The first that comes in mind is to paralellise:
 	
 	Fit function
-	- matrix multiplication
+	- matrix multiplication [naive]
+	- matrix transpose [naive]
 	- dot product
 	- element-wise multiplication
 	- bias addition
 	- forward propagation
+	- backward propagation
 	Updating weights function
 
 1. Make a function to get information from the GPU card. (num of blocks, size etc)
