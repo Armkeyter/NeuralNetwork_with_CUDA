@@ -2,7 +2,7 @@
 
 #include "./cuda_kernel.cuh"
 
-
+#define SHMEM_SIZE = 1024
 
 void getDeviceInfo() {
     const int kb = 1024;
@@ -60,6 +60,46 @@ __device__ void dev_sigmoid(float* A, float* B, bool is_derivative, int rows, in
             B[Row * cols + Col] = A[Row * cols + Col] * (1 - A[Row * cols + Col]);
     }
 }
+}
+
+// Very mysterious, I removed the shared memory part because it's late and I'll do it later, but it works ahah
+__global__ void matrixSum(float* matrix, float* result, int rows, int cols) {
+    // Calculate global thread indices
+    int Row = blockIdx.y * blockDim.y + threadIdx.y;
+    int Col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // Initialize thread-local sum
+    float localSum = 0.0f;
+
+    // Check if the thread indices are within the matrix bounds
+    if (Row < rows && Col < cols) {
+        // Access the element in the matrix
+        float element = matrix[Row * cols + Col];
+
+        // Accumulate the element to the local sum
+        localSum += element;
+    }
+
+    // Perform parallel reduction within the block along the x-dimension
+    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+        __syncthreads();
+        if (threadIdx.x < stride && Col + stride < cols) {
+            localSum += __shfl_down_sync(0xFFFFFFFF, localSum, stride);
+        }
+    }
+
+    // Perform parallel reduction within the block along the y-dimension
+    for (int stride = blockDim.y / 2; stride > 0; stride >>= 1) {
+        __syncthreads();
+        if (threadIdx.y < stride && Row + stride < rows) {
+            localSum += __shfl_down_sync(0xFFFFFFFF, localSum, stride * blockDim.x);
+        }
+    }
+
+    // The thread with indices (0, 0) in each block writes the result to global memory
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+        atomicAdd(result, localSum);
+    }
 
 __global__ void hadamardprod(float* data1, float* data2, int rows, int cols) {
     int Row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -110,16 +150,7 @@ __global__ void forwardProp(float* A, float* B,float* biases, float* C, int rows
     //dev_sigmoid(C, C, false, rowsA, colsB);
 }
 
-__global__ void sigmoidCU(float* A, float* B,bool is_derivative, int rows, int cols) {
-    int Row = blockIdx.y * blockDim.y + threadIdx.y;
-    int Col = blockIdx.x * blockDim.x + threadIdx.x;
-    if ((Row < rows) && (Col < cols)) {
-        if (!is_derivative)
-            B[Row * cols + Col] = 1 / (1 + exp(-A[Row * cols + Col]));
-        else
-            B[Row * cols + Col] = A[Row * cols + Col] * (1 - A[Row * cols + Col]);
-    }
-}
+
 
 __global__ void softamxCU(float* A, float* B, int rows, int cols,bool is_derivative) {
     int Row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -194,6 +225,7 @@ void matrixMultiplication(int threadsN, float* data_GPU, float* weights_GPU, flo
         blocksPerGrid.y = ceil(double(threadsN) / double(threadsPerBlock.y));
     }
     matmul<<<blocksPerGrid, threadsPerBlock>>>(data_GPU, weights_GPU, result, rowsX, colsX, rowsWeights);
+
 }
 
 //Term by term matrix multiplication
@@ -217,6 +249,22 @@ void hadamardproduct(int threadsN, float* data1, float* data2,
 void sigmoid(int threadsN, float* data_GPU, float* reuslts_GPU, int rows, int cols, bool is_derivative)
 {
     dim3 threadsPerBlock(threadsN, threadsN);
+    dim3 blocksPerGrid((cols - 1) / threadsN + 1, (rows - 1) / threadsN + 1, 1);
+    if (threadsN * threadsN > 512) {
+        threadsPerBlock.x = 512;
+        threadsPerBlock.y = 512;
+        blocksPerGrid.x = ceil(double(threadsN) / double(threadsPerBlock.x));
+        blocksPerGrid.y = ceil(double(threadsN) / double(threadsPerBlock.y));
+    }
+    sigmoidCU << <blocksPerGrid, threadsPerBlock >> > (data_GPU, reuslts_GPU, is_derivative, rows, cols);
+}
+
+
+
+
+//Computes the sum over a matrix
+void sum(int threadsN, float* data_GPU, float* results_GPU, int rows, int cols){
+    dim3 threadsPerBlock(threadsN, threadsN);
     dim3 blocksPerGrid((rows - 1) / threadsN + 1, (rows - 1) / threadsN + 1, 1);
     if (threadsN * threadsN > 512) {
         threadsPerBlock.x = 512;
@@ -224,9 +272,8 @@ void sigmoid(int threadsN, float* data_GPU, float* reuslts_GPU, int rows, int co
         blocksPerGrid.x = ceil(double(threadsN) / double(threadsPerBlock.x));
         blocksPerGrid.y = ceil(double(threadsN) / double(threadsPerBlock.y));
     }
-    sigmoidCU<<<blocksPerGrid, threadsPerBlock>>>(data_GPU, reuslts_GPU, is_derivative, rows, cols);
+    matrixSum << <blocksPerGrid, threadsPerBlock >> > (data_GPU, results_GPU, rows, cols);
 }
-
 void softmax(int threadsN, float* data_GPU, float* reuslts_GPU, int rows, int cols, bool is_derivative)
 {
     dim3 threadsPerBlock(threadsN, threadsN);
@@ -237,8 +284,10 @@ void softmax(int threadsN, float* data_GPU, float* reuslts_GPU, int rows, int co
         blocksPerGrid.x = ceil(double(threadsN) / double(threadsPerBlock.x));
         blocksPerGrid.y = ceil(double(threadsN) / double(threadsPerBlock.y));
     }
-    softamxCU<<<blocksPerGrid, threadsPerBlock>>>(data_GPU, reuslts_GPU, rows, cols, is_derivative);
+    softamxCU << <blocksPerGrid, threadsPerBlock >> > (data_GPU, reuslts_GPU, rows, cols, is_derivative);
 }
+
+
 
 
 void forwardPropagation(int threadsN, float* data_GPU, float* weights_GPU,float *biases, float* result,
