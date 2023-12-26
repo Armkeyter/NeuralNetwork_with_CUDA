@@ -143,14 +143,18 @@
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="activations.cuh" />
     <ClInclude Include="activations.h" />
     <ClInclude Include="cuda_kernel.cuh" />
+    <ClInclude Include="losses.cuh" />
     <ClInclude Include="losses.h" />
     <ClInclude Include="Neural_Network.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="activations.cu" />
     <CudaCompile Include="File.cu" />
+    <CudaCompile Include="losses.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

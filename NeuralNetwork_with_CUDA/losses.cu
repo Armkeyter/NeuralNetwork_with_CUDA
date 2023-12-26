@@ -1,5 +1,5 @@
-#include "./activations.cuh"
-
+#include "./losses.cuh"
+#include "./cuda_kernel.cuh"
 //Cross entropy Kernel (Given predictions and labels, returns a matrix containing the cross entropy terms at (i,j))
 __global__ void crossentropyCU(float* Y_predict, float* Y, float* loss, int rows, int cols) {
     int Row = blockIdx.y * blockDim.y + threadIdx.y;

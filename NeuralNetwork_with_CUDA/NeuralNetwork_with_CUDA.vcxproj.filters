@@ -38,6 +38,12 @@
     <CudaCompile Include="File.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
+    <CudaCompile Include="activations.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="losses.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cuda_kernel.cuh">
@@ -53,6 +59,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="losses.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="activations.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="losses.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

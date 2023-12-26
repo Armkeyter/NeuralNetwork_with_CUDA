@@ -61,6 +61,8 @@ __device__ void dev_sigmoid(float* A, float* B, bool is_derivative, int rows, in
     }
 }
 
+
+
 // Very mysterious, I removed the shared memory part because it's late and I'll do it later, but it works ahah
 __global__ void matrixSum(float* matrix, float* result, int rows, int cols) {
     // Calculate global thread indices
@@ -100,6 +102,7 @@ __global__ void matrixSum(float* matrix, float* result, int rows, int cols) {
         atomicAdd(result, localSum);
     }
 }
+
 __global__ void hadamardprod(float* data1, float* data2, int rows, int cols) {
     int Row = blockIdx.y * blockDim.y + threadIdx.y;
     int Col = blockIdx.x * blockDim.x + threadIdx.x;
@@ -142,11 +145,35 @@ __device__ void matrix_T_GPU(float* data, float* result, int rows, int cols) {
         result[Col * rows + Row] = data[Row * cols + Col];
 }
 
+__device__ void d_weights(float* copy_activation,
+    float* prev_activation, float* prev_activation_T, float* result, int X_rows, int X_cols, int W_cols) {
+
+    matrix_T_GPU(prev_activation, prev_activation_T, X_rows, X_cols);
+    dev_matmul(prev_activation_T, copy_activation, result, X_cols, X_rows, W_cols);
+    int Row = blockIdx.y * blockDim.y + threadIdx.y;
+    int Col = blockIdx.x * blockDim.x + threadIdx.x;
+    if ((Row < X_cols) && (Col < W_cols)) {
+        result[Row * W_cols + Col] /= X_rows;
+    }
+
+}
+
+__device__ void d_biases(float* A, float* B, int rows, int cols) {
+    int Col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (Col < cols) {
+        float sum = 0.0f;
+        for (int i = 0; i < rows; ++i) {
+            sum += B[i * cols + Col];
+        }
+        A[Col] = sum / rows;
+    }
+}
+
 
 __global__ void forwardProp(float* A, float* B,float* biases, float* C, int rowsA, int colsA, int colsB) {
     dev_matmul(A, B, C, rowsA, colsA, colsB);
     addbias(C, biases, C, rowsA, colsB);
-    //dev_sigmoid(C, C, false, rowsA, colsB);
 }
 
 
@@ -171,32 +198,6 @@ __global__ void softamxCU(float* A, float* B, int rows, int cols,bool is_derivat
     }
 }
 
-__global__ void d_weights(float* copy_activation,
-    float* prev_activation, float* prev_activation_T, float* result, int X_rows, int X_cols, int W_cols) {
-
-    //matrix_copy(activation, copy_matrix, X_rows, X_cols);
-    matrix_T_GPU(prev_activation, prev_activation_T, X_rows, X_cols);
-    dev_matmul(prev_activation_T, copy_activation, result, X_cols, X_rows, W_cols);
-    int Row = blockIdx.y * blockDim.y + threadIdx.y;
-    int Col = blockIdx.x * blockDim.x + threadIdx.x;
-    if ((Row < X_cols) && (Col < W_cols)) {
-        result[Row* W_cols+Col] /= X_rows;
-    }
-
-}
-
-__global__ void d_biases(float* A, float* B, int rows, int cols) {
-    int Col = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (Col < cols) {
-        float sum = 0.0f;
-        for (int i = 0; i < rows; ++i) {
-            sum += B[i * cols + Col];
-        }
-        A[Col] = sum/rows;
-    }
-}
-
 
 __global__ void update_weights_kernel(float* weights, float* d_weights, float* biases, float* d_biases, 
                                         float lr,int rowsX, int colsX) {
@@ -209,6 +210,7 @@ __global__ void update_weights_kernel(float* weights, float* d_weights, float* b
     }
 
 }
+
 void matrixMultiplication(int threadsN, float* data_GPU, float* weights_GPU, float* result,
     int rowsX, int colsX, int rowsWeights) {
 
@@ -255,6 +257,22 @@ __global__ void sigmoidCU(float* A, float* B, bool is_derivative, int rows, int 
     }
 
 }
+__global__ void count_derivativesCU(float* copy_activation, float* prev_activation, 
+    float* prev_activation_T,float* result_weights, float* biases, float* result_biases, 
+    int X_rows, int X_cols, int W_cols) {
+    d_biases(biases, result_biases, X_rows, W_cols);
+    d_weights(copy_activation, prev_activation, prev_activation_T, result_weights, X_rows, X_cols, W_cols);
+}
+
+__global__ void transpose_matmulCU(float* array_to_T, float* result_T, float* data_GPU, float* weights_GPU,
+    float* result_matmul, int rowsX, int colsX, int rowsWeights){
+
+    matrix_T_GPU(array_to_T,result_T, rowsWeights,colsX);
+    dev_matmul(data_GPU, weights_GPU, result_matmul, rowsX, colsX, rowsWeights);
+
+    
+}
+
 void sigmoid(int threadsN, float* data_GPU, float* reuslts_GPU, int rows, int cols, bool is_derivative)
 {
     dim3 threadsPerBlock(threadsN, threadsN);
@@ -344,6 +362,21 @@ void matrix_transpose_GPU(int threadsN, float* data_GPU, float* reuslts_GPU, int
     matrix_T<<<blocksPerGrid, threadsPerBlock >> > (data_GPU, reuslts_GPU, rowsX, colsX);
 }
 
+void transpose_matmul_GPU(int threadsN, float* array_to_T, float* result_T, float* data_GPU, float* weights_GPU, 
+    float* result_matmul, int rowsX, int colsX, int rowsWeights)
+{
+    dim3 threadsPerBlock(threadsN, threadsN);
+    dim3 blocksPerGrid((rowsX - 1) / threadsN + 1, (rowsX - 1) / threadsN + 1, 1);
+    if (threadsN * threadsN > 512) {
+        threadsPerBlock.x = 512;
+        threadsPerBlock.y = 512;
+        blocksPerGrid.x = ceil(double(threadsN) / double(threadsPerBlock.x));
+        blocksPerGrid.y = ceil(double(threadsN) / double(threadsPerBlock.y));
+    }
+    transpose_matmulCU << <blocksPerGrid, threadsPerBlock >> > (array_to_T, result_T, data_GPU, 
+        weights_GPU,result_matmul, rowsX, colsX, rowsWeights);
+}
+
 void derivative_weights(int threadsN,float* copy_activation, 
     float* prev_activation, float* prev_activation_T, float* result, int X_rows, int X_cols, int W_cols)
 {
@@ -355,8 +388,8 @@ void derivative_weights(int threadsN,float* copy_activation,
         blocksPerGrid.x = ceil(double(threadsN) / double(threadsPerBlock.x));
         blocksPerGrid.y = ceil(double(threadsN) / double(threadsPerBlock.y));
     }
-    d_weights<<<blocksPerGrid, threadsPerBlock>>>(copy_activation,
-        prev_activation, prev_activation_T, result, X_rows, X_cols, W_cols);
+    //d_weights<<<blocksPerGrid, threadsPerBlock>>>(copy_activation,
+    //    prev_activation, prev_activation_T, result, X_rows, X_cols, W_cols);
 }
 
 void derivative_biases(int threadsN, float* data_GPU, float* reuslts_GPU, int rowsX, int colsX)
@@ -369,7 +402,23 @@ void derivative_biases(int threadsN, float* data_GPU, float* reuslts_GPU, int ro
         blocksPerGrid.x = ceil(double(threadsN) / double(threadsPerBlock.x));
         blocksPerGrid.y = ceil(double(threadsN) / double(threadsPerBlock.y));
     }
-    d_biases <<<blocksPerGrid, threadsPerBlock >> > (data_GPU, reuslts_GPU, rowsX, colsX);
+    //d_biases <<<blocksPerGrid, threadsPerBlock >> > (data_GPU, reuslts_GPU, rowsX, colsX);
+}
+
+void count_derivatives(int threadsN, float* copy_activation, float* prev_activation, float* prev_activation_T, 
+    float* result_weights, float* biases, float* result_biases, int X_rows, int X_cols, int W_cols)
+{
+    dim3 threadsPerBlock(threadsN);
+    dim3 blocksPerGrid((X_rows - 1) / threadsN + 1, (W_cols - 1) / threadsN + 1, 1);
+    if (threadsN * threadsN > 512) {
+        threadsPerBlock.x = 512;
+        threadsPerBlock.y = 512;
+        blocksPerGrid.x = ceil(double(threadsN) / double(threadsPerBlock.x));
+        blocksPerGrid.y = ceil(double(threadsN) / double(threadsPerBlock.y));
+    }
+    count_derivativesCU << <blocksPerGrid, threadsPerBlock >> > (copy_activation,prev_activation, prev_activation_T,
+        result_weights, biases, result_biases, X_rows, X_cols, W_cols);
+
 }
 
 void update_weights_GPU(int threadsN, float* weights, float* d_weights, float* biases, float* d_biases,

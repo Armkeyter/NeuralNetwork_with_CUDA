@@ -70,7 +70,7 @@ int main()
         int** one_hot_Y;
         int num_of_classes = 0;
         float lr = 0.01;
-        int epochs = 100;
+        int epochs = 1;
         one_hot_Y = one_hot_encoding(Y, rows, &num_of_classes);
         float** Y_pred;
         int* Y_pred_num;

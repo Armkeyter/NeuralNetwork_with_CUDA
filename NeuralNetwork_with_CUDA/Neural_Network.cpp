@@ -5,7 +5,7 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "./cuda_kernel.cuh"
-
+#include "./losses.cuh"
 //#define DEBUG 
 
 float** Neural_Network::matrix_copy(float** X, int row_size, int col_size) {
@@ -317,10 +317,9 @@ void Neural_Network::back_propagation_GPU(int blockSize, float* x_GPU, float* Y_
 
 	for (int i = 0; i < a_len - 1; i++) {
 		cudaMalloc((void**)&a_t, architecture[a_len - i - 1] * X_rows * sizeof(float));
-		//dw
-		derivative_weights(blockSize, delta_t, Z_GPU[a_len - i - 2], a_t, dW_GPU[i],
-			X_rows, architecture[a_len - i - 1], architecture[a_len - i]);
-		cudaFree(a_t);
+		//dw, db
+		count_derivatives(blockSize, delta_t, Z_GPU[a_len - i - 2], a_t, dW_GPU[i],
+			db_GPU[i], delta_t, X_rows, architecture[a_len - i - 1], architecture[a_len - i]);
 #ifdef DEBUG
 
 
@@ -338,8 +337,9 @@ void Neural_Network::back_propagation_GPU(int blockSize, float* x_GPU, float* Y_
 		delete[] dw0;
 #endif // DEBUG
 
-		//db
-		derivative_biases(blockSize, db_GPU[i], delta_t, X_rows, architecture[a_len - i]);
+		
+		cudaFree(a_t);
+
 #ifdef DEBUG
 		float* db0 = new float[architecture[a_len-i]];
 		cudaMemcpy(db0, db_GPU[i], architecture[a_len-i] * sizeof(float), cudaMemcpyDeviceToHost);
@@ -355,11 +355,17 @@ void Neural_Network::back_propagation_GPU(int blockSize, float* x_GPU, float* Y_
 		sigmoid(blockSize, Z_GPU[a_len - i - 2], Z_GPU[a_len - i - 2], X_rows, architecture[a_len - i - 1], true);
 		float* w_T, * temp_GPU;
 		cudaMalloc((void**)&w_T, architecture[a_len - i] * architecture[a_len - i - 1] * sizeof(float));
-		matrix_transpose_GPU(blockSize, weights_GPU[a_len - i - 1], w_T, architecture[a_len - i - 1],
-			architecture[a_len - i]);
 		cudaMalloc((void**)&temp_GPU, X_rows * architecture[a_len - i - 1] * sizeof(float));
+
+
+		/*matrix_transpose_GPU(blockSize, weights_GPU[a_len - i - 1], w_T, architecture[a_len - i - 1],
+			architecture[a_len - i]);
 		matrixMultiplication(blockSize, delta_t, w_T, temp_GPU, X_rows, architecture[a_len - i],
-			architecture[a_len - i - 1]);
+			architecture[a_len - i - 1]);*/
+
+		transpose_matmul_GPU(blockSize, weights_GPU[a_len - i - 1], w_T, delta_t, w_T, temp_GPU, X_rows,
+			architecture[a_len - i], architecture[a_len - i - 1]);
+
 		hadamardproduct(blockSize, temp_GPU, Z_GPU[a_len - i - 2], X_rows, architecture[a_len - i - 1]);
 
 		cudaFree(delta_t);
@@ -388,14 +394,13 @@ void Neural_Network::back_propagation_GPU(int blockSize, float* x_GPU, float* Y_
 	// LAST
 	float* x_GPU_T;
 	cudaMalloc((void**)&x_GPU_T, X_cols * X_rows * sizeof(float));
-	//dw
-	derivative_weights(blockSize, delta_t, x_GPU, x_GPU_T, dW_GPU[a_len - 1], X_rows, X_cols, architecture[1]);
+	//dw, db
+	count_derivatives(blockSize, delta_t, x_GPU, x_GPU_T, dW_GPU[a_len - 1], 
+					db_GPU[a_len - 1], delta_t, X_rows, X_cols, architecture[1]);
 	cudaFree(x_GPU_T);
-	// db
-	derivative_biases(blockSize, db_GPU[a_len - 1], delta_t, X_rows, architecture[1]);
 	cudaFree(delta_t);
-	
-	
+
+
 	// UPDATE
 	for (int i = 0; i < a_len; i++) {
 		update_weights_GPU(blockSize, weights_GPU[i], dW_GPU[a_len-i-1], biases_GPU[i], db_GPU[a_len - i - 1], lr,
@@ -408,7 +413,7 @@ void Neural_Network::back_propagation_GPU(int blockSize, float* x_GPU, float* Y_
 			}
 		}
 	}
-#ifdef DEBUG
+//#ifdef DEBUG
 		for (int k = 0; k < a_len; k++) {
 			std::cout << "WEIGHTS: " << k << std::endl;
 			for (int i = 0; i < architecture[k]; i++) {
@@ -428,7 +433,7 @@ void Neural_Network::back_propagation_GPU(int blockSize, float* x_GPU, float* Y_
 			}
 			std::cout << std::endl;
 		}
-#endif // DEBUG
+//#endif // DEBUG
 }
 
 Neural_Network::Neural_Network(int* architecture,int size,int seed)
@@ -618,22 +623,34 @@ void Neural_Network::fit(float** X, int** Y,int X_rows,int X_cols,int epochs,flo
 		}
 		softmax(blockSize, Z_GPU[a_len - 1], Z_GPU[a_len - 1], X_rows, architecture[a_len], false);
 		
-		float cross_loss = 0.0f;
-		std::cout << "EPOCH: " << 1 << '\t' << "Loss: " << cross_loss << std::endl;
-
-
-		//
-		// Initialise variables for backpropagation
 		float* Y_flatten = new float[X_rows * architecture[a_len]];
 		for (int i = 0; i < X_rows; i++) {
 			for (int j = 0; j < architecture[a_len]; j++) {
 				Y_flatten[i * architecture[a_len] + j] = Y[i][j];
 			}
 		}
-		// Count derivative of softmax
 		float* Y_GPU;
 		cudaMalloc((void**)&Y_GPU, X_rows * architecture[a_len] * sizeof(float));
 		cudaMemcpy(Y_GPU, Y_flatten, X_rows * architecture[a_len] * sizeof(float), cudaMemcpyHostToDevice);
+
+		/*float *cross_loss,*cross_result;
+		float* cross;
+		cudaMalloc((void**)&cross, X_rows * architecture[a_len] * sizeof(float));
+		cudaMalloc((void**)&cross_loss, sizeof(float));
+		
+		cross_entropy(blockSize, Z_GPU[a_len - 1], Y_GPU, cross, cross_loss, X_rows, X_cols);
+
+		cudaMalloc((void**)&cross_result, sizeof(float));
+		cudaMemcpy(cross_result, cross_loss,sizeof(float), cudaMemcpyDeviceToHost);
+		std::cout << "EPOCH: " << 1 << '\t' << "Loss: " << *cross_result << std::endl;
+		cudaFree(cross);
+		cudaFree(cross_loss);*/
+
+		//
+		// Initialise variables for backpropagation
+		
+		// Count derivative of softmax
+		
 		float** dW_GPU = new float* [a_len];
 		float** db_GPU = new float* [a_len];
 		for (int i = 0; i < a_len - 1; i++) {
