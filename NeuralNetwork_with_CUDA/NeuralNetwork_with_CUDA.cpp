@@ -30,8 +30,9 @@ int main()
     }
 
     // Creating architecture
-    int architecture[] = {4,16,8,2};
-    //int architecture[] = { 4,16,32,4,8,16,4,4,16,4,2 };
+    //int architecture[] = {4,16,8,2};
+    int architecture[] = {8,32};
+    //int architecture[] = {16,16,16};
     // Length of array
     int length = sizeof(architecture) / sizeof(architecture[0])-1;
     std::cout << "Size of the array: " << length << std::endl;
@@ -56,7 +57,7 @@ int main()
         unsigned int seed = 10;
         shuffle(X, Y, rows, seed);
         Neural_Network NN(architecture, length, seed);
-        NN.print_weights_biases();
+        //NN.print_weights_biases();
         std::cout << std::endl << std::endl;
         std::cout << "DATA" << std::endl;
         for (int i = 0; i < rows; i++) {
@@ -75,7 +76,8 @@ int main()
         float** Y_pred;
         int* Y_pred_num;
 
-        NN.fit(X, one_hot_Y, rows, cols - 1, epochs, lr);
+        //NN.fit(X, one_hot_Y, rows, cols - 1, epochs, lr);
+        NN.test(rows,cols-1);
 
         for (int i = 0; i < rows;i++) {
             delete[] d_array[i];

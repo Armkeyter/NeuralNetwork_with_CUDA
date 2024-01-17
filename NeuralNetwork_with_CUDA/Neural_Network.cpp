@@ -6,6 +6,7 @@
 #include "device_launch_parameters.h"
 #include "./cuda_kernel.cuh"
 #include "./losses.cuh"
+#include "./activations.cuh"
 //#define DEBUG 
 
 float** Neural_Network::matrix_copy(float** X, int row_size, int col_size) {
@@ -356,12 +357,6 @@ void Neural_Network::back_propagation_GPU(int blockSize, float* x_GPU, float* Y_
 		float* w_T, * temp_GPU;
 		cudaMalloc((void**)&w_T, architecture[a_len - i] * architecture[a_len - i - 1] * sizeof(float));
 		cudaMalloc((void**)&temp_GPU, X_rows * architecture[a_len - i - 1] * sizeof(float));
-
-
-		/*matrix_transpose_GPU(blockSize, weights_GPU[a_len - i - 1], w_T, architecture[a_len - i - 1],
-			architecture[a_len - i]);
-		matrixMultiplication(blockSize, delta_t, w_T, temp_GPU, X_rows, architecture[a_len - i],
-			architecture[a_len - i - 1]);*/
 
 		transpose_matmul_GPU(blockSize, weights_GPU[a_len - i - 1], w_T, delta_t, w_T, temp_GPU, X_rows,
 			architecture[a_len - i], architecture[a_len - i - 1]);
@@ -899,70 +894,124 @@ float Neural_Network::evaluate(float** X, int* Y_true, int X_rows, int X_cols)
 
 void Neural_Network::test(int rows,int cols)
 {
-	float* A = new float[rows * cols];
-	float* B = new float[architecture[0] * architecture[1]];
-
-	// ... (populate matrices A and B)
-	for (int i = 0; i < rows; i++) {
-		for (int j = 0; j < cols; j++) {
-			A[i * cols + j] = i * cols + j;
-			std::cout << A[i * cols + j] << ' ';
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
-	std::cout << std::endl;
-	for (int i = 0; i < architecture[0]; i++) {
-		for (int j = 0; j < architecture[1]; j++) {
-			B[i * architecture[1] + j] = i * architecture[1] + j;
-			std::cout << B[i * architecture[1] + j] << ' ';
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
-	std::cout << std::endl;
-
-	// Allocate memory for matrices A and B on the device
-	float* d_A, * d_B, * d_C;
-	cudaMalloc((void**)&d_A, rows * cols * sizeof(float));
-	cudaMalloc((void**)&d_B, architecture[0] * architecture[1] * sizeof(float));
-	cudaMalloc((void**)&d_C, rows * architecture[1] * sizeof(float));
-
-	// Copy matrices from host to device
-	cudaMemcpy(d_A, A, rows * cols * sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_B, B, architecture[0] * architecture[1] * sizeof(float), cudaMemcpyHostToDevice);
-
-	// Define grid and block dimensions
-	dim3 DimGrid((architecture[1] - 1) / 8 + 1, (rows- 1) / 8 + 1, 1);
-	dim3 DimBlock(8, 8, 1);
-
-	int blockSize = 8;
-
-	// Launch the kernel
-	//Wrapper::matmul_wrap(numBlocks, blockSize, d_A, d_B, d_C, rows, cols, architecture[1]);
-	matrixMultiplication(blockSize, d_A, d_B, d_C, rows, cols, architecture[1]);
-	// Copy the result matrix back to the host
-	float* C = new float[rows * architecture[1]];
-	cudaMemcpy(C, d_C, rows * architecture[1] * sizeof(float), cudaMemcpyDeviceToHost);
-
-
-	std::cout << "Result Matrix C:" << std::endl;
-	for (int i = 0; i < rows; i++) {
-		for (int j = 0; j < architecture[1]; j++) {
-			std::cout << C[i * architecture[1] + j] << ' ';
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
-	std::cout << std::endl;
+	//TRANSPOSE
+	float* input_arr = new float[architecture[0] * architecture[1]];
 	
-	// Print the result matrix C
+	/*for (int i = 0; i < architecture[0]; i++) {
+		for (int j = 0; j < architecture[1]; j++) {
+			input_arr[i * architecture[1] + j] = array_weights[0][i][j];
+			std::cout << input_arr[i * architecture[1] + j] << ' ';
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+	std::cout << std::endl;*/
+	float* input_GPU,*result_T;
+	cudaMalloc((void**)&input_GPU, architecture[0] * architecture[1] * sizeof(float));
+	cudaMalloc((void**)&result_T, architecture[1]*architecture[0] * sizeof(float));
+	cudaMemcpy(input_GPU, input_arr, architecture[0] * architecture[1] * sizeof(float), cudaMemcpyHostToDevice);
 
-	// Free host and device memory
-	delete[] A;
-	delete[] B;
+	//int blockSize = architecture[1];
+	int blockSize = 16;
+	//try_Transpose(blockSize, input_GPU, result_T, architecture[0], architecture[1]);
+	float* C = new float[architecture[1]* architecture[0]];
+	cudaMemcpy(C, result_T, architecture[1] * architecture[0] * sizeof(float), cudaMemcpyDeviceToHost);
+
+	//std::cout << "Result Matrix_T" << std::endl;
+	//for (int i = 0; i < architecture[1]; i++) {
+	//	for (int j = 0; j < architecture[0]; j++) {
+	//		std::cout << C[i * architecture[0] + j] << ' ';
+	//	}
+	//	std::cout << std::endl;
+	//}
+	//std::cout << std::endl;
+	//std::cout << std::endl;
+
 	delete[] C;
-	cudaFree(d_A);
-	cudaFree(d_B);
-	cudaFree(d_C);
+	cudaFree(result_T);
+	cudaFree(input_GPU);
+	
+	//MATMULL
+
+	//float* w1_arr = new float[architecture[0] * architecture[1]];
+	//float* w2_arr = new float[architecture[1] * architecture[2]];
+	//std::cout << "W1:" << std::endl;
+	//for (int i = 0; i < architecture[0]; i++) {
+	//	for (int j = 0; j < architecture[1]; j++) {
+	//		w1_arr[i * architecture[1] + j] = array_weights[0][i][j];
+	//		std::cout << w1_arr[i * architecture[1] + j] << ' ';
+	//	}
+	//	std::cout << std::endl;
+	//}
+	//std::cout << std::endl;
+	//std::cout << std::endl;
+	//std::cout << "W2:" << std::endl;
+	//for (int i = 0; i < architecture[1]; i++) {
+	//	for (int j = 0; j < architecture[2]; j++) {
+	//		w2_arr[i * architecture[2] + j] = array_weights[1][i][j];
+	//		std::cout << w2_arr[i * architecture[2] + j] << ' ';
+	//	}
+	//	std::cout << std::endl;
+	//}
+	//std::cout << std::endl;
+	//std::cout << std::endl;
+
+	//float** weights_3 = new float*[architecture[0]];
+	//for (int i = 0; i < architecture[0]; i++) {
+	//	weights_3[i] = new float[architecture[2]];
+	//}
+
+	//matrix_multiplication(array_weights[0], array_weights[1],weights_3,architecture[0], architecture[1],
+	//						architecture[2]);
+	//std::cout << "MATMUL CPU:" << std::endl;
+	//for (int i = 0; i < architecture[0]; i++) {
+	//	for (int j = 0; j < architecture[2]; j++) {
+	//		std::cout << weights_3[i][j] << ' ';
+	//	}
+	//	std::cout << std::endl;
+	//}
+	//std::cout << std::endl;
+	//std::cout << std::endl;
+
+
+	//
+
+
+	//float* w1_GPU,* w2_GPU, * result;
+	//cudaMalloc((void**)&w1_GPU, architecture[0] * architecture[1] * sizeof(float));
+	//cudaMalloc((void**)&w2_GPU, architecture[1] * architecture[2] * sizeof(float));
+	//cudaMemcpy(w1_GPU, w1_arr, architecture[0] * architecture[1] * sizeof(float), cudaMemcpyHostToDevice);
+	//cudaMemcpy(w2_GPU, w2_arr, architecture[1] * architecture[2] * sizeof(float), cudaMemcpyHostToDevice);
+
+	//cudaMalloc((void**)&result, architecture[0] * architecture[2] * sizeof(float));
+	//
+
+	//int blockSize = 16;
+	//float* C = new float[architecture[0] * architecture[2]];
+	//try_MatMull(blockSize, w1_GPU, w2_GPU, result, architecture[0], architecture[1], architecture[2]);
+	//
+	//
+	//cudaMemcpy(C, result, architecture[0] * architecture[2] * sizeof(float), cudaMemcpyDeviceToHost);
+
+	//std::cout << "Matrix with tiling:" << std::endl;
+	//for (int i = 0; i < architecture[0]; i++) {
+	//	for (int j = 0; j < architecture[2]; j++) {
+	//		std::cout << C[i * architecture[2] + j] << ' ';
+	//	}
+	//	std::cout << std::endl;
+	//}
+	//std::cout << std::endl;
+	//std::cout << std::endl;
+
+
+	//for (int i = 0; i < architecture[0]; i++)
+	//	delete[] weights_3[i];
+	//delete[] weights_3;
+
+	//delete[] C;
+	//delete[] w1_arr;
+	//delete[] w2_arr;
+	//cudaFree(w1_GPU);
+	//cudaFree(w2_GPU);
+	//cudaFree(result);
 }
