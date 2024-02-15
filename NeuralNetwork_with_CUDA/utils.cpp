@@ -4,14 +4,14 @@
 #include "./utils.h"
 
 
-void write_into_file(std::string filename, float res){
+void write_into_file(std::string filename, float res, float add) {
     std::ofstream file;
     file.open(filename, std::ios::app);
     if (!file.is_open()) {
         std::cout << "Doesn't find a file" << std::endl;
     } 
     std::cout << "File has been opened" << std::endl;
-    file << res <<";"<< std::endl;
+    file << add <<',' << res << std::endl;
     file.close();
 }
 

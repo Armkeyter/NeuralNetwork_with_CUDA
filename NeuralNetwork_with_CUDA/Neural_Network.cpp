@@ -408,7 +408,7 @@ void Neural_Network::back_propagation_GPU(int blockSize, float* x_GPU, float* Y_
 			}
 		}
 	}
-//#ifdef DEBUG
+#ifdef DEBUG
 		for (int k = 0; k < a_len; k++) {
 			std::cout << "WEIGHTS: " << k << std::endl;
 			for (int i = 0; i < architecture[k]; i++) {
@@ -428,7 +428,7 @@ void Neural_Network::back_propagation_GPU(int blockSize, float* x_GPU, float* Y_
 			}
 			std::cout << std::endl;
 		}
-//#endif // DEBUG
+#endif // DEBUG
 }
 
 Neural_Network::Neural_Network(int* architecture,int size,int seed)
@@ -691,7 +691,6 @@ void Neural_Network::fit(float** X, int** Y,int X_rows,int X_cols,int epochs,flo
 			//BACKPROP - UPDATE
 			back_propagation_GPU(blockSize, x_GPU, Y_GPU, Z_GPU, weights_GPU, dW_GPU, biases_GPU, db_GPU, new_weights, lr, X_rows, X_cols);
 		}
-
 		// DELETING
 		for (int i = 0; i < a_len; i++) {
 			cudaFree(Z_GPU[i]);
@@ -830,6 +829,79 @@ void Neural_Network::fit(float** X, int** Y,int X_rows,int X_cols,int epochs,flo
 
 float** Neural_Network::predict(float** X, int X_rows, int X_cols)
 {
+	float** Y_pred = new float* [X_rows];
+	//nb_of_classes
+	for (int i = 0; i < X_rows; i++) {
+		Y_pred[i] = new float[architecture[a_len]];
+	}
+
+	#ifdef GPU
+		float* flattenedX = new float[X_rows * X_cols];
+		float* flattenWeights = new float[architecture[0] * architecture[1]];
+		//Z_GPU[0] = new float[X_rows * architecture[1]];
+		for (int i = 0; i < X_rows; ++i)
+			for (int j = 0; j < X_cols; ++j)
+				flattenedX[i * X_cols + j] = X[i][j];
+
+		for (int i = 0; i < architecture[0]; i++)
+			for (int j = 0; j < architecture[1]; j++)
+				flattenWeights[i * architecture[1] + j] = array_weights[0][i][j];
+
+		float* x_GPU;
+		float** weights_GPU = new float* [a_len];
+		float** biases_GPU = new float* [a_len];
+		cudaMalloc((void**)&x_GPU, X_rows * X_cols * sizeof(float));
+		cudaMalloc((void**)&weights_GPU[0], architecture[0] * architecture[1] * sizeof(float));
+		cudaMalloc((void**)&biases_GPU[0], architecture[1] * sizeof(float));
+
+
+		float** Z_GPU = new float* [a_len];
+		cudaMalloc((void**)&Z_GPU[0], X_rows * architecture[1] * sizeof(float));
+
+
+		cudaMemcpy(x_GPU, flattenedX, X_rows * X_cols * sizeof(float), cudaMemcpyHostToDevice);
+		cudaMemcpy(weights_GPU[0], flattenWeights, architecture[0] * architecture[1] * sizeof(float), cudaMemcpyHostToDevice);
+		cudaMemcpy(biases_GPU[0], array_biases[0], architecture[1] * sizeof(float), cudaMemcpyHostToDevice);
+
+		delete[] flattenWeights;
+		int blockSize = 8;
+		forwardPropagation(blockSize, x_GPU, weights_GPU[0], biases_GPU[0], Z_GPU[0], X_rows, X_cols, architecture[1]);
+		if (a_len >= 2) {
+			sigmoid(blockSize, Z_GPU[0], Z_GPU[0], X_rows, architecture[1]);
+
+
+			for (int i = 1; i < a_len; i++) {
+
+				float* flattenWeights = new float[architecture[i] * architecture[i + 1]];
+				for (int j = 0; j < architecture[i]; j++)
+					for (int k = 0; k < architecture[i + 1]; k++)
+						flattenWeights[j * architecture[i + 1] + k] = array_weights[i][j][k];
+
+				cudaMalloc((void**)&weights_GPU[i], architecture[i] * architecture[i + 1] * sizeof(float));
+				cudaMemcpy(weights_GPU[i], flattenWeights, architecture[i] * architecture[i + 1] * sizeof(float), cudaMemcpyHostToDevice);
+				delete[] flattenWeights;
+				cudaMalloc((void**)&biases_GPU[i], architecture[i + 1] * sizeof(float));
+				cudaMemcpy(biases_GPU[i], array_biases[i], architecture[i + 1] * sizeof(float), cudaMemcpyHostToDevice);
+
+
+				cudaMalloc((void**)&Z_GPU[i], X_rows * architecture[i + 1] * sizeof(float));
+				forwardPropagation(blockSize, Z_GPU[i - 1], weights_GPU[i], biases_GPU[i], Z_GPU[i], X_rows, architecture[i], architecture[i + 1]);
+				if (i != a_len - 1) {
+					sigmoid(blockSize, Z_GPU[i], Z_GPU[i], X_rows, architecture[i + 1]);
+				}
+			}
+		}
+		softmax(blockSize, Z_GPU[a_len - 1], Z_GPU[a_len - 1], X_rows, architecture[a_len], false);
+		float* flatten_Y = new float[X_rows * architecture[a_len]];
+		cudaMemcpy(Z_GPU[a_len - 1], flatten_Y, X_rows * architecture[a_len] * sizeof(float), cudaMemcpyHostToDevice);
+		for (int i = 0; i < X_rows; i++) {
+			for (int j = 0; j < architecture[a_len]; j++) {
+				Y_pred[i][j] = flatten_Y[i * architecture[a_len] + j];
+			}
+		}
+		delete[] flatten_Y;
+	#else
+	
 	float*** Z = new float** [a_len];
 	// init first result XW weights
 	Z[0] = new float* [X_rows];
@@ -853,12 +925,6 @@ float** Neural_Network::predict(float** X, int X_rows, int X_cols)
 	softmax(Z[a_len - 1], X_rows, architecture[a_len]);
 
 
-	float** Y_pred = new float* [X_rows];
-	//nb_of_classes
-	for (int i = 0; i < X_rows; i++) {
-		Y_pred[i] = new float[architecture[a_len]];
-	}
-
 	for (int i = 0; i < X_rows; i++) 
 		for (int j = 0; j < architecture[a_len]; j++) 
 			Y_pred[i][j] = Z[a_len - 1][i][j];
@@ -872,7 +938,7 @@ float** Neural_Network::predict(float** X, int X_rows, int X_cols)
 		delete[] Z[i];
 	}
 	delete[] Z;
-
+	#endif // GPU
 	return Y_pred;
 }
 
@@ -897,7 +963,7 @@ void Neural_Network::test(int rows,int cols)
 	//TRANSPOSE
 	float* input_arr = new float[architecture[0] * architecture[1]];
 	
-	/*for (int i = 0; i < architecture[0]; i++) {
+	for (int i = 0; i < architecture[0]; i++) {
 		for (int j = 0; j < architecture[1]; j++) {
 			input_arr[i * architecture[1] + j] = array_weights[0][i][j];
 			std::cout << input_arr[i * architecture[1] + j] << ' ';
@@ -905,7 +971,7 @@ void Neural_Network::test(int rows,int cols)
 		std::cout << std::endl;
 	}
 	std::cout << std::endl;
-	std::cout << std::endl;*/
+	std::cout << std::endl;
 	float* input_GPU,*result_T;
 	cudaMalloc((void**)&input_GPU, architecture[0] * architecture[1] * sizeof(float));
 	cudaMalloc((void**)&result_T, architecture[1]*architecture[0] * sizeof(float));
@@ -913,19 +979,19 @@ void Neural_Network::test(int rows,int cols)
 
 	//int blockSize = architecture[1];
 	int blockSize = 16;
-	//try_Transpose(blockSize, input_GPU, result_T, architecture[0], architecture[1]);
+	try_Transpose(blockSize, input_GPU, result_T, architecture[0], architecture[1]);
 	float* C = new float[architecture[1]* architecture[0]];
 	cudaMemcpy(C, result_T, architecture[1] * architecture[0] * sizeof(float), cudaMemcpyDeviceToHost);
 
-	//std::cout << "Result Matrix_T" << std::endl;
-	//for (int i = 0; i < architecture[1]; i++) {
-	//	for (int j = 0; j < architecture[0]; j++) {
-	//		std::cout << C[i * architecture[0] + j] << ' ';
-	//	}
-	//	std::cout << std::endl;
-	//}
-	//std::cout << std::endl;
-	//std::cout << std::endl;
+	std::cout << "Result Matrix_T" << std::endl;
+	for (int i = 0; i < architecture[1]; i++) {
+		for (int j = 0; j < architecture[0]; j++) {
+			std::cout << C[i * architecture[0] + j] << ' ';
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+	std::cout << std::endl;
 
 	delete[] C;
 	cudaFree(result_T);

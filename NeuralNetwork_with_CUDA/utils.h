@@ -3,7 +3,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-void write_into_file(std::string filename, float res);
+void write_into_file(std::string filename, float res,float add);
 float** read_csv_file(std::string filename, int* rows, int* cols);
 
 /**

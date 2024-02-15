@@ -2,7 +2,7 @@
 #pragma once
 #include "./utils.h"
 
-#define GPU
+
 
 class Neural_Network
 {

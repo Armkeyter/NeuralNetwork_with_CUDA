@@ -156,6 +156,9 @@
     <CudaCompile Include="File.cu" />
     <CudaCompile Include="losses.cu" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="test_write_into_file.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(ProgramFiles)\NVIDIA GPU Computing Toolkit\CUDA\v11.8\extras\visual_studio_integration\MSBuildExtensions\CUDA 11.8.targets" />

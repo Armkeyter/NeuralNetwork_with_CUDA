@@ -68,4 +68,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="test_write_into_file.txt" />
+  </ItemGroup>
 </Project>

@@ -28,7 +28,66 @@ void getDeviceInfo() {
     }
 }
 
+__device__  static void matMul_try(float* data_GPU, float* weights_GPU, float* result,
+    int rowsX, int colsX, int colsWeights)
+{
 
+    __shared__ float ds_A[TILE_DIM][TILE_DIM];
+    __shared__ float ds_B[TILE_DIM][TILE_DIM];
+
+    int tx = threadIdx.x, ty = threadIdx.y;
+
+    int row = blockIdx.y * TILE_DIM + threadIdx.y;
+    int col = blockIdx.x * TILE_DIM + threadIdx.x;
+
+    float sum = 0;
+
+    //double numberoftiles =ceil(m/TILE_WIDTH);
+
+    if (rowsX == colsX == colsWeights) {
+        for (int l = 0; l < rowsX / TILE_DIM; ++l) {     //iterate through tiles
+
+            for (int j = 0; j < TILE_DIM; ++j)
+                sum += data_GPU[(row * rowsX) + (l * TILE_DIM + j)] * weights_GPU[(l * TILE_DIM + j) * rowsX + col];
+            __syncthreads();
+        }
+        result[row * rowsX + col] = sum;
+    }
+    else {
+        for (int l = 0; l < ceil((float)colsX / TILE_DIM); ++l) {     //iterate through tiles
+            if (row < rowsX && l * TILE_DIM + tx < colsX)
+
+                ds_A[ty][tx] = data_GPU[row * colsX + l * TILE_DIM + tx];
+            else
+                ds_A[ty][tx] = 0.0;
+
+            if (l * TILE_DIM + ty < colsX && col < colsWeights)
+
+                ds_B[ty][tx] = weights_GPU[(l * TILE_DIM + ty) * colsWeights + col];
+
+            else
+                ds_B[ty][tx] = 0.0;
+
+            __syncthreads();
+
+            for (int j = 0; j < TILE_DIM && j < colsX; ++j) {    //iterate through elements in the tile
+
+                sum = sum + ds_A[ty][j] * ds_B[j][tx];
+
+
+            }
+
+            __syncthreads();
+
+
+        }
+        if (row < rowsX && col < colsWeights)
+
+            result[row * colsWeights + col] = sum;
+    }
+
+
+}
 
 
 __device__ void dev_matmul(float* A, float* B, float* C, int rowsA, int colsA, int colsB) {
@@ -185,6 +244,7 @@ __device__ void d_weights(float* copy_activation,
 
     matrix_T_GPU(prev_activation, prev_activation_T, X_rows, X_cols);
     dev_matmul(prev_activation_T, copy_activation, result, X_cols, X_rows, W_cols);
+    //matMul_try(prev_activation_T, copy_activation, result, X_cols, X_rows, W_cols);
     int Row = blockIdx.y * blockDim.y + threadIdx.y;
     int Col = blockIdx.x * blockDim.x + threadIdx.x;
     if ((Row < X_cols) && (Col < W_cols)) {
@@ -208,6 +268,7 @@ __device__ void d_biases(float* A, float* B, int rows, int cols) {
 
 __global__ void forwardProp(float* A, float* B,float* biases, float* C, int rowsA, int colsA, int colsB) {
     dev_matmul(A, B, C, rowsA, colsA, colsB);
+    //matMul_try(A, B, C, rowsA, colsA, colsB);
     addbias(C, biases, C, rowsA, colsB);
 }
 
@@ -235,6 +296,7 @@ __global__ void transpose_matmulCU(float* array_to_T, float* result_T, float* da
 
     matrix_T_GPU(array_to_T, result_T, rowsWeights, colsX);
     dev_matmul(data_GPU, weights_GPU, result_matmul, rowsX, colsX, rowsWeights);
+    //matMul_try(data_GPU, weights_GPU, result_matmul, rowsX, colsX, rowsWeights);
 
 
 }
@@ -433,70 +495,11 @@ void try_Transpose(int threadsN,float* input_GPU, float* result_T, int rows, int
     //}
 
     dim3 dimBlock(TILE_DIM, BLOCK_ROWS, 1);
-    //std::cout<<"Num of Blocks " << dimGrid.x << ' ' << dimGrid.y << ' ' << dimGrid.z <<std::endl;
+    std::cout<<"Num of Blocks " << dimGrid.x << ' ' << dimGrid.y << ' ' << dimGrid.z <<std::endl;
     transposeDiagonal << <dimGrid, dimBlock >> > (result_T, input_GPU, cols, rows, BLOCK_ROWS);
     
 }
-__global__  static void matMul_try(float* data_GPU, float* weights_GPU, float* result,
-    int rowsX, int colsX, int colsWeights)
-{
 
-    __shared__ float ds_A[TILE_DIM][TILE_DIM];
-    __shared__ float ds_B[TILE_DIM][TILE_DIM];
-
-    int tx = threadIdx.x, ty = threadIdx.y;
-
-    int row = blockIdx.y * TILE_DIM + threadIdx.y;
-    int col = blockIdx.x * TILE_DIM + threadIdx.x;
-
-    float sum = 0;
-
-    //double numberoftiles =ceil(m/TILE_WIDTH);
-
-    if (rowsX == colsX == colsWeights) {
-        for (int l = 0; l < rowsX / TILE_DIM; ++l) {     //iterate through tiles
-
-            for (int j = 0; j < TILE_DIM; ++j)
-                sum += data_GPU[(row * rowsX) + (l * TILE_DIM + j)] * weights_GPU[(l * TILE_DIM + j) * rowsX + col];
-            __syncthreads();
-        }
-        result[row * rowsX + col] = sum;
-    }
-    else {
-        for (int l = 0; l < ceil((float)colsX / TILE_DIM); ++l) {     //iterate through tiles
-            if (row < rowsX && l * TILE_DIM + tx < colsX)
-
-                ds_A[ty][tx] = data_GPU[row * colsX + l * TILE_DIM + tx];
-            else
-                ds_A[ty][tx] = 0.0;
-
-            if (l * TILE_DIM + ty < colsX && col < colsWeights)
-
-                ds_B[ty][tx] = weights_GPU[(l * TILE_DIM + ty) * colsWeights + col];
-
-            else
-                ds_B[ty][tx] = 0.0;
-
-            __syncthreads();
-
-            for (int j = 0; j < TILE_DIM && j < colsX; ++j) {    //iterate through elements in the tile
-
-                sum = sum + ds_A[ty][j] * ds_B[j][tx];
-
-
-            }
-
-            __syncthreads();
-
-
-        }
-        if (row < rowsX && col < colsWeights)
-
-            result[row * colsWeights + col] = sum;
-    }
-
-
-}
 __global__ void tileMatMull(float* data_GPU, float* weights_GPU, float* result, 
                             int rowsX, int colsX, int colsWeights) {
         
@@ -571,6 +574,6 @@ void try_MatMull(int threadsN, float* data_GPU, float* weights_GPU, float* resul
     dim3 dimGrid((colsWeights + TILE_DIM - 1) / TILE_DIM, (rowsX + TILE_DIM - 1) / TILE_DIM);
     dim3 dimBlock(TILE_DIM, TILE_DIM);
     //tileMatMull << <dimGrid, dimBlock >> > (data_GPU, weights_GPU, result, rowsX, colsX, colsWeights);
-    matMul_try << <dimGrid, dimBlock >> > (data_GPU, weights_GPU, result, rowsX, colsX, colsWeights);
+    //matMul_try << <dimGrid, dimBlock >> > (data_GPU, weights_GPU, result, rowsX, colsX, colsWeights);
 }
 
